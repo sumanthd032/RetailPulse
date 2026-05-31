@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetailPulse — Store Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Design tokens ─────────────────────────────────────────────────── */
+    :root {
+      --bg-base:        #080D1A;
+      --bg-surface:     #0F1629;
+      --bg-raised:      #162040;
+      --bg-overlay:     rgba(15, 22, 41, 0.92);
+      --border:         rgba(99, 120, 190, 0.14);
+      --border-accent:  rgba(139, 92, 246, 0.35);
+      --purple:         #8B5CF6;
+      --purple-light:   #A78BFA;
+      --purple-glow:    rgba(139, 92, 246, 0.18);
+      --cyan:           #22D3EE;
+      --cyan-dim:       rgba(34, 211, 238, 0.12);
+      --green:          #10B981;
+      --green-dim:      rgba(16, 185, 129, 0.12);
+      --amber:          #F59E0B;
+      --amber-dim:      rgba(245, 158, 11, 0.12);
+      --red:            #EF4444;
+      --red-dim:        rgba(239, 68, 68, 0.12);
+      --text-primary:   #F0F4FF;
+      --text-secondary: #8898B8;
+      --text-muted:     #4A5878;
+      --radius-sm:      8px;
+      --radius-md:      12px;
+      --radius-lg:      16px;
+    }
+
+    /* ── Reset & base ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 14px; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(99,120,190,0.3); border-radius: 3px; }
+
+    /* ── Layout ────────────────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    .content { flex: 1; padding: 0 24px 32px; max-width: 1440px; margin: 0 auto; width: 100%; }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    .header {
+      display: flex; align-items: center; gap: 20px;
+      padding: 0 24px; height: 64px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--purple), var(--cyan)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .logo-text { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+    .logo-text span { color: var(--purple-light); }
+    .header-sep { height: 28px; width: 1px; background: var(--border); margin: 0 4px; }
+    .store-select-wrapper { position: relative; }
+    .store-select {
+      appearance: none; background: var(--bg-raised); border: 1px solid var(--border);
+      color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 7px 32px 7px 12px; border-radius: var(--radius-sm); cursor: pointer; outline: none;
+      transition: border-color 0.2s;
+    }
+    .store-select:focus { border-color: var(--border-accent); }
+    .select-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-secondary); font-size: 10px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .live-badge { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); position: relative; }
+    .live-dot.pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: var(--green); opacity: 0; animation: pulse 2s infinite; }
+    .live-dot.error { background: var(--red); }
+    .live-dot.error::after { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:0;transform:scale(1)} 50%{opacity:0.4;transform:scale(2.2)} }
+    .header-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); }
+
+    /* ── Page header ───────────────────────────────────────────────────── */
+    .page-header { padding: 28px 0 20px; }
+    .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+    .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      position: relative;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .card:hover { border-color: rgba(99,120,190,0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* ── KPI grid ──────────────────────────────────────────────────────── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    @media(max-width:1024px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.kpi-grid{grid-template-columns:1fr}}
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-color, var(--purple)), transparent);
+      opacity: 0.6;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 17px; }
+    .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
+    .kpi-sub { font-size: 12px; color: var(--text-secondary); }
+    .trend { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 99px; margin-left: 8px; }
+    .trend.up   { background: var(--green-dim); color: var(--green); }
+    .trend.down { background: var(--red-dim);   color: var(--red);   }
+    .trend.flat { background: var(--cyan-dim);  color: var(--cyan);  }
+
+    /* KPI accent colours */
+    .kpi-visitors  { --accent-color: var(--purple); } .kpi-visitors  .kpi-icon { background: var(--purple-glow); }
+    .kpi-conv      { --accent-color: var(--green);  } .kpi-conv      .kpi-icon { background: var(--green-dim);  }
+    .kpi-queue     { --accent-color: var(--amber);  } .kpi-queue     .kpi-icon { background: var(--amber-dim);  }
+    .kpi-abandon   { --accent-color: var(--red);    } .kpi-abandon   .kpi-icon { background: var(--red-dim);    }
+
+    /* ── Charts row ────────────────────────────────────────────────────── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+
+    /* Funnel */
+    .funnel-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .funnel-item { display: flex; flex-direction: column; gap: 6px; }
+    .funnel-meta { display: flex; justify-content: space-between; align-items: baseline; }
+    .funnel-stage-name { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+    .funnel-count { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .funnel-bar-track { height: 8px; background: var(--bg-raised); border-radius: 99px; overflow: hidden; }
+    .funnel-bar-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+    .funnel-dropoff { font-size: 10px; color: var(--red); font-weight: 500; }
+
+    /* Heatmap */
+    .heatmap-grid { display: flex; flex-direction: column; gap: 8px; }
+    .heatmap-row { display: flex; align-items: center; gap: 12px; }
+    .heatmap-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; width: 110px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .heatmap-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .heatmap-bar-track { height: 5px; background: var(--bg-raised); border-radius: 99px; overflow: hidden; position: relative; }
+    .heatmap-bar-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+    .heatmap-score { font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; width: 30px; text-align: right; }
+    .heatmap-empty { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 13px; }
+
+    /* ── Bottom row ────────────────────────────────────────────────────── */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
+    @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+
+    /* Anomaly panel */
+    .anomaly-list { display: flex; flex-direction: column; gap: 10px; }
+    .anomaly-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg-raised);
+      transition: all 0.3s;
+    }
+    .anomaly-item.CRITICAL { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.05); }
+    .anomaly-item.WARN     { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.05); }
+    .anomaly-item.INFO     { border-color: rgba(34,211,238,0.25); background: rgba(34,211,238,0.04); }
+    .anomaly-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+    .anomaly-badge.CRITICAL { background: rgba(239,68,68,0.2); color: #FCA5A5; }
+    .anomaly-badge.WARN     { background: rgba(245,158,11,0.2); color: #FCD34D; }
+    .anomaly-badge.INFO     { background: rgba(34,211,238,0.2); color: #67E8F9; }
+    .anomaly-content { flex: 1; min-width: 0; }
+    .anomaly-type { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+    .anomaly-action { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+    .anomaly-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+    .anomaly-no-data { padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
+    .anomaly-good-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* Event feed */
+    .feed-list { display: flex; flex-direction: column; gap: 0; max-height: 340px; overflow-y: auto; }
+    .feed-item {
+      display: grid; grid-template-columns: 120px 100px 1fr 90px;
+      align-items: center; gap: 12px;
+      padding: 9px 12px; border-bottom: 1px solid var(--border);
+      font-size: 11px; transition: background 0.2s; cursor: default;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-item:hover { background: var(--bg-raised); }
+    .feed-item.new { animation: feedIn 0.4s ease-out; }
+    @keyframes feedIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+    .feed-ts { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+    .feed-visitor { color: var(--purple-light); font-family: 'JetBrains Mono', monospace; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .feed-type-chip { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; background: var(--bg-raised); color: var(--text-secondary); }
+    .feed-type-chip.ENTRY              { background: rgba(139,92,246,0.15); color: var(--purple-light); }
+    .feed-type-chip.EXIT               { background: rgba(99,120,190,0.1);  color: #93A8D8; }
+    .feed-type-chip.ZONE_ENTER         { background: rgba(16,185,129,0.12); color: #6EE7B7; }
+    .feed-type-chip.ZONE_EXIT          { background: rgba(16,185,129,0.06); color: #4ADE80; }
+    .feed-type-chip.ZONE_DWELL         { background: rgba(34,211,238,0.1);  color: var(--cyan); }
+    .feed-type-chip.BILLING_QUEUE_JOIN { background: rgba(245,158,11,0.12); color: #FCD34D; }
+    .feed-type-chip.BILLING_QUEUE_ABANDON { background: rgba(239,68,68,0.1); color: #FCA5A5; }
+    .feed-type-chip.REENTRY            { background: rgba(167,139,250,0.15); color: #C4B5FD; }
+    .feed-zone { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .feed-empty { padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+    /* ── Empty state ───────────────────────────────────────────────────── */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 12px; }
+    .empty-icon { font-size: 36px; opacity: 0.5; }
+    .empty-text { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+
+    /* ── Loading shimmer ───────────────────────────────────────────────── */
+    .shimmer { background: linear-gradient(90deg, var(--bg-raised) 25%, var(--bg-surface) 50%, var(--bg-raised) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+    @keyframes shimmer { to{background-position:-200% 0} }
+
+    /* ── Utility ───────────────────────────────────────────────────────── */
+    .flex { display: flex; } .items-center { align-items: center; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+    .ml-auto { margin-left: auto; } .text-muted { color: var(--text-muted); }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .no-data-confidence { font-size: 10px; color: var(--amber); background: var(--amber-dim); padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+  </style>
+</head>
+
+<body class="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <a class="logo" href="/">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">Retail<span>Pulse</span></span>
+    </a>
+
+    <div class="header-sep"></div>
+
+    <div class="store-select-wrapper">
+      <select id="storeSelect" class="store-select" onchange="changeStore(this.value)">
+        <option value="">Loading stores…</option>
+      </select>
+      <span class="select-arrow">▾</span>
+    </div>
+
+    <div class="header-right">
+      <div class="live-badge">
+        <div class="live-dot pulse" id="liveDot"></div>
+        <span id="liveStatus">Connecting…</span>
+      </div>
+      <div class="header-sep"></div>
+      <div class="header-time" id="headerTime">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ── Main content ──────────────────────────────────────────────────── -->
+  <div class="content">
+
+    <div class="page-header">
+      <h1 class="page-title" id="pageTitle">Store Intelligence Dashboard</h1>
+      <p class="page-subtitle" id="pageSubtitle">Real-time analytics from CCTV event stream · Today</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-visitors">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-label">Unique Visitors</div>
+        <div class="kpi-value" id="kpiVisitors">—</div>
+        <div class="kpi-sub">customers today</div>
+      </div>
+      <div class="kpi-card kpi-conv">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-label">Conversion Rate</div>
+        <div class="kpi-value" id="kpiConversion">—</div>
+        <div class="kpi-sub">visitors who purchased</div>
+      </div>
+      <div class="kpi-card kpi-queue">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-label">Queue Depth</div>
+        <div class="kpi-value" id="kpiQueue">—</div>
+        <div class="kpi-sub">at billing counter now</div>
+      </div>
+      <div class="kpi-card kpi-abandon">
+        <div class="kpi-icon">🚪</div>
+        <div class="kpi-label">Abandonment Rate</div>
+        <div class="kpi-value" id="kpiAbandonment">—</div>
+        <div class="kpi-sub">left queue without buying</div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="charts-grid">
+
+      <!-- Funnel -->
+      <div class="card">
+        <div class="card-title">Conversion Funnel</div>
+        <ul class="funnel-list" id="funnelList">
+          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
+          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
+          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
+          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
+        </ul>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="card">
+        <div class="card-title flex items-center gap-2">
+          Zone Heatmap
+          <span id="heatmapConfidence" class="no-data-confidence" style="display:none">Low confidence</span>
+        </div>
+        <div class="heatmap-grid" id="heatmapGrid">
+          <div class="heatmap-empty">Loading zone data…</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom row -->
+    <div class="bottom-grid">
+
+      <!-- Anomalies -->
+      <div class="card">
+        <div class="card-title">Active Anomalies</div>
+        <div id="anomalyPanel">
+          <div class="anomaly-no-data"><span class="anomaly-good-icon">✅</span>All systems normal</div>
+        </div>
+      </div>
+
+      <!-- Live event feed -->
+      <div class="card">
+        <div class="card-title flex items-center">
+          Live Event Feed
+          <span class="ml-auto text-muted font-mono" style="font-size:11px" id="feedCount">0 events</span>
+        </div>
+        <div class="feed-list" id="feedList">
+          <div class="feed-empty">Waiting for events…</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentStore   = null;
+let eventSource    = null;
+let prevMetrics    = {};
+let totalEvents    = 0;
+const FUNNEL_COLORS = ['#8B5CF6','#7C3AED','#6D28D9','#5B21B6'];
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  startClock();
+  await loadStores();
+}
+
+function startClock() {
+  const el = document.getElementById('headerTime');
+  setInterval(() => {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('en-IN', {timeZone:'Asia/Kolkata',hour12:false}) + ' IST';
+  }, 1000);
+}
+
+async function loadStores() {
+  try {
+    const res   = await fetch('/stores');
+    const data  = await res.json();
+    const sel   = document.getElementById('storeSelect');
+    sel.innerHTML = '';
+    const stores = data.stores || ['STORE_BLR_002'];
+    stores.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+    changeStore(stores[0]);
+  } catch(e) {
+    changeStore('STORE_BLR_002');
+  }
+}
+
+function changeStore(storeId) {
+  if (!storeId) return;
+  currentStore = storeId;
+  document.getElementById('pageTitle').textContent = storeId.replace('_', ' ').replace('_', ' ');
+  document.getElementById('storeSelect').value = storeId;
+  connectSSE(storeId);
+}
+
+// ── SSE connection ────────────────────────────────────────────────────────────
+function connectSSE(storeId) {
+  if (eventSource) { eventSource.close(); }
+
+  setStatus('connecting');
+  eventSource = new EventSource(`/stores/${storeId}/stream`);
+
+  eventSource.onopen = () => setStatus('live');
+  eventSource.onerror = () => {
+    setStatus('error');
+    setTimeout(() => connectSSE(storeId), 5000);
+  };
+  eventSource.onmessage = (e) => {
+    try {
+      const bundle = JSON.parse(e.data);
+      if (bundle.error) { console.error('SSE error:', bundle.error); return; }
+      renderBundle(bundle);
+    } catch(ex) { console.error('SSE parse error:', ex); }
+  };
+}
+
+function setStatus(state) {
+  const dot  = document.getElementById('liveDot');
+  const text = document.getElementById('liveStatus');
+  dot.className = 'live-dot';
+  if (state === 'live')       { dot.classList.add('pulse'); text.textContent = 'Live'; }
+  else if (state === 'error') { dot.classList.add('error');  text.textContent = 'Reconnecting…'; }
+  else                        { text.textContent = 'Connecting…'; }
+}
+
+// ── Render bundle ─────────────────────────────────────────────────────────────
+function renderBundle(bundle) {
+  renderMetrics(bundle.metrics  || {});
+  renderFunnel(bundle.funnel    || {});
+  renderHeatmap(bundle.heatmap  || {});
+  renderAnomalies(bundle.anomalies || {});
+  renderFeed(bundle.recent_events || []);
+}
+
+// ── KPI cards ─────────────────────────────────────────────────────────────────
+function renderMetrics(m) {
+  animateValue('kpiVisitors',   prevMetrics.unique_visitors   || 0, m.unique_visitors   || 0, v => Math.round(v).toLocaleString());
+  animateValue('kpiConversion', prevMetrics.conversion_rate   || 0, m.conversion_rate   || 0, v => (v*100).toFixed(1) + '%');
+  animateValue('kpiQueue',      prevMetrics.current_queue_depth||0, m.current_queue_depth||0, v => Math.round(v).toString());
+  animateValue('kpiAbandonment',prevMetrics.abandonment_rate  || 0, m.abandonment_rate  || 0, v => (v*100).toFixed(1) + '%');
+
+  // Color-code queue depth
+  const qEl = document.getElementById('kpiQueue');
+  const qd  = m.current_queue_depth || 0;
+  qEl.style.color = qd >= 8 ? 'var(--red)' : qd >= 5 ? 'var(--amber)' : 'var(--text-primary)';
+
+  prevMetrics = { ...m };
+}
+
+function animateValue(id, from, to, fmt, duration = 700) {
+  const el   = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  const tick  = (now) => {
+    const p = Math.min((now - start) / duration, 1);
+    const e = 1 - Math.pow(1 - p, 3); // cubic ease-out
+    el.textContent = fmt(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// ── Funnel ────────────────────────────────────────────────────────────────────
+function renderFunnel(data) {
+  const stages = data.stages || [];
+  const list   = document.getElementById('funnelList');
+  if (!stages.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No funnel data yet.<br>Ingest events to see the funnel.</div></div>'; return; }
+
+  const maxCount = stages[0]?.count || 1;
+  list.innerHTML = stages.map((s, i) => {
+    const pct   = maxCount > 0 ? (s.count / maxCount * 100).toFixed(0) : 0;
+    const color = FUNNEL_COLORS[i] || '#4C1D95';
+    const drop  = s.drop_off_pct > 0 ? `<span class="funnel-dropoff">↓ ${s.drop_off_pct}% drop</span>` : '';
+    return `
+      <li class="funnel-item">
+        <div class="funnel-meta">
+          <span class="funnel-stage-name">${s.stage}</span>
+          <span class="funnel-count">${s.count.toLocaleString()} ${drop}</span>
+        </div>
+        <div class="funnel-bar-track">
+          <div class="funnel-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+function scoreColor(score) {
+  // 0→cool blue, 50→purple, 100→hot red
+  if (score <= 50) {
+    const t = score / 50;
+    return interpolate('#1D4ED8', '#8B5CF6', t);
+  } else {
+    const t = (score - 50) / 50;
+    return interpolate('#8B5CF6', '#EF4444', t);
+  }
+}
+
+function interpolate(c1, c2, t) {
+  const h = (s) => [parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
+  const a = h(c1), b = h(c2);
+  const r = Math.round(a[0]+(b[0]-a[0])*t);
+  const g = Math.round(a[1]+(b[1]-a[1])*t);
+  const bv= Math.round(a[2]+(b[2]-a[2])*t);
+  return `rgb(${r},${g},${bv})`;
+}
+
+function renderHeatmap(data) {
+  const zones   = data.zones  || [];
+  const conf    = data.data_confidence;
+  const grid    = document.getElementById('heatmapGrid');
+  const confEl  = document.getElementById('heatmapConfidence');
+  confEl.style.display = (!conf && zones.length) ? 'inline' : 'none';
+
+  if (!zones.length) {
+    grid.innerHTML = '<div class="heatmap-empty">No zone data yet.<br>Run the detection pipeline to populate.</div>';
+    return;
+  }
+
+  grid.innerHTML = zones.slice(0, 10).map(z => {
+    const vs = z.visit_score || 0;
+    const ds = z.dwell_score || 0;
+    const vc = scoreColor(vs);
+    const dc = scoreColor(ds);
+    const dwell_s = z.raw_avg_dwell_ms > 0 ? (z.raw_avg_dwell_ms/1000).toFixed(0)+'s' : '—';
+    return `
+      <div class="heatmap-row">
+        <span class="heatmap-label" title="${z.zone_id}">${z.zone_id.replace(/_/g,' ')}</span>
+        <div class="heatmap-bars">
+          <div class="heatmap-bar-track" title="Visit frequency ${vs.toFixed(0)}/100">
+            <div class="heatmap-bar-fill" style="width:${vs}%;background:${vc}"></div>
+          </div>
+          <div class="heatmap-bar-track" title="Avg dwell ${dwell_s}">
+            <div class="heatmap-bar-fill" style="width:${ds}%;background:${dc}"></div>
+          </div>
+        </div>
+        <span class="heatmap-score" title="Avg dwell">${dwell_s}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Anomalies ─────────────────────────────────────────────────────────────────
+function renderAnomalies(data) {
+  const anomalies = data.anomalies || [];
+  const panel     = document.getElementById('anomalyPanel');
+
+  if (!anomalies.length) {
+    panel.innerHTML = '<div class="anomaly-no-data"><span class="anomaly-good-icon">✅</span>All systems normal</div>';
+    return;
+  }
+
+  panel.innerHTML = `<div class="anomaly-list">${anomalies.map(a => {
+    const cur  = a.current_value  != null ? ` · current: ${a.current_value}` : '';
+    const base = a.baseline_value != null ? ` · baseline: ${a.baseline_value}` : '';
+    const zone = a.zone_id        ? ` · ${a.zone_id}` : '';
+    const conf = !a.data_confidence ? '<span class="no-data-confidence">Low data</span>' : '';
+    const ts   = a.detected_at ? a.detected_at.split('T')[1].slice(0,8) : '';
+    return `
+      <div class="anomaly-item ${a.severity}">
+        <span class="anomaly-badge ${a.severity}">${a.severity}</span>
+        <div class="anomaly-content">
+          <div class="anomaly-type">${a.anomaly_type.replace(/_/g,' ')}${zone} ${conf}</div>
+          <div class="anomaly-action">${a.suggested_action}</div>
+          <div class="anomaly-meta">${ts} UTC${cur}${base}</div>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+// ── Event feed ────────────────────────────────────────────────────────────────
+let feedEventIds = new Set();
+
+function renderFeed(events) {
+  const list = document.getElementById('feedList');
+  if (!events.length) { list.innerHTML = '<div class="feed-empty">Waiting for events…</div>'; return; }
+
+  totalEvents = Math.max(totalEvents, events.length);
+  document.getElementById('feedCount').textContent = `${events.length} events`;
+
+  list.innerHTML = events.map((e, idx) => {
+    const ts   = e.timestamp ? e.timestamp.split('T')[1].slice(0,8) : '—';
+    const vis  = (e.visitor_id || '').slice(0, 12);
+    const zone = e.zone_id || (e.event_type === 'ENTRY' ? 'store entry' : '—');
+    const isNew = !feedEventIds.has(e.event_id);
+    if (e.event_id) feedEventIds.add(e.event_id);
+    return `
+      <div class="feed-item ${isNew && idx === 0 ? 'new' : ''}">
+        <span class="feed-ts">${ts}</span>
+        <span class="feed-visitor">${vis}</span>
+        <span class="feed-type-chip ${e.event_type}">${e.event_type}</span>
+        <span class="feed-zone">${zone}</span>
+      </div>`;
+  }).join('');
+
+  // Keep set bounded
+  if (feedEventIds.size > 200) feedEventIds = new Set([...feedEventIds].slice(-100));
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

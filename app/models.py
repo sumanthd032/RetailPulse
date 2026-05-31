@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -57,7 +57,8 @@ class StoreEvent(BaseModel):
 # ── API request/response models ──────────────────────────────────────────────
 
 class IngestRequest(BaseModel):
-    events: list[StoreEvent] = Field(..., max_length=500)
+    # Accept raw dicts — per-event validation runs in the router for partial-success behaviour
+    events: list[Any] = Field(..., max_length=500)
 
 
 class IngestError(BaseModel):
