@@ -513,9 +513,41 @@ function connectSSE() {
     try {
       const b = JSON.parse(e.data);
       if (b.error) return;
+
+      // Sync date picker to the date the server is actually using
+      // (the most recent date with real data — not necessarily today)
+      if (b.effective_date && b.effective_date !== queryDate) {
+        queryDate = b.effective_date;
+        document.getElementById('datePicker').value = b.effective_date;
+        document.getElementById('dateChip').textContent = '📅 ' + b.effective_date;
+      }
+
+      if (!b.has_data) {
+        showNoData();
+        return;
+      }
+
       renderAll(b);
-    } catch {}
+    } catch(err) { console.error('SSE parse error:', err); }
   };
+}
+
+function showNoData() {
+  document.getElementById('kpiVisitors').textContent  = '0';
+  document.getElementById('kpiConv').textContent      = '0%';
+  document.getElementById('kpiQueue').textContent     = '0';
+  document.getElementById('kpiAbandon').textContent   = '0%';
+  document.getElementById('funnelWrap').innerHTML =
+    '<div style="text-align:center;padding:48px 20px;color:var(--txt3)">' +
+    '<div style="font-size:28px;margin-bottom:12px">📭</div>' +
+    '<div style="font-size:13px;font-weight:600;margin-bottom:8px">No events ingested yet</div>' +
+    '<div style="font-size:11px;line-height:1.7">Run the pipeline first:<br>' +
+    '<code style="background:var(--bg2);padding:4px 8px;border-radius:4px;font-size:10px">./pipeline/run.sh</code><br>' +
+    'Then ingest:<br>' +
+    '<code style="background:var(--bg2);padding:4px 8px;border-radius:4px;font-size:10px">python scripts/seed_events.py</code>' +
+    '</div></div>';
+  document.getElementById('feedList').innerHTML =
+    '<div class="feed-empty">No events — ingest data to see the live feed</div>';
 }
 
 function setDot(state) {

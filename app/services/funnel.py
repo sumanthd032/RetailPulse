@@ -8,12 +8,9 @@ from typing import Optional
 
 from ..db import get_db
 from ..models import FunnelResponse, FunnelStage
+from .utils import effective_date
 
 logger = logging.getLogger(__name__)
-
-
-def _today() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
 def compute_funnel(store_id: str, date: Optional[str] = None) -> FunnelResponse:
@@ -25,10 +22,8 @@ def compute_funnel(store_id: str, date: Optional[str] = None) -> FunnelResponse:
     The visitor_sessions table tracks boolean flags for each stage.
     A REENTRY visitor counts once (their session already exists).
     """
-    if date is None:
-        date = _today()
-
     conn = get_db()
+    date = effective_date(store_id, conn, date)
 
     row = conn.execute(
         """

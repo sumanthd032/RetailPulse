@@ -95,6 +95,29 @@ async def dashboard():
 
 # ── Health endpoint ────────────────────────────────────────────────────────────
 
+@app.post("/admin/reload-pos", tags=["system"])
+async def reload_pos():
+    """Reload POS transactions from CSV into the DB (call after updating the CSV)."""
+    from .db import POS_CSV, get_db
+    import csv
+    conn = get_db()
+    conn.execute("DELETE FROM pos_transactions")
+    rows_loaded = 0
+    try:
+        with open(POS_CSV) as f:
+            for row in csv.DictReader(f):
+                conn.execute(
+                    "INSERT OR IGNORE INTO pos_transactions (transaction_id, store_id, timestamp, basket_value_inr) VALUES (?,?,?,?)",
+                    (row["transaction_id"], row["store_id"], row["timestamp"], float(row.get("basket_value_inr", 0))),
+                )
+                rows_loaded += 1
+        conn.commit()
+    except Exception as exc:
+        return {"error": str(exc), "loaded": 0}
+    logger.info("POS reloaded: %d rows", rows_loaded)
+    return {"loaded": rows_loaded, "source": POS_CSV}
+
+
 @app.get("/health", response_model=HealthResponse, tags=["system"])
 async def health(request: Request) -> HealthResponse:
     """Service health — last event per store, STALE_FEED detection (>10 min)."""

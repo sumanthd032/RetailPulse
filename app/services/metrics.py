@@ -8,20 +8,15 @@ from typing import Optional
 
 from ..db import get_db
 from ..models import MetricsResponse, ZoneDwellMetric
+from .utils import effective_date
 
 logger = logging.getLogger(__name__)
 
 
-def _today() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-
 def compute_metrics(store_id: str, date: Optional[str] = None) -> MetricsResponse:
     """Compute real-time store metrics. Never returns nulls — always returns 0.0."""
-    if date is None:
-        date = _today()
-
     conn = get_db()
+    date = effective_date(store_id, conn, date)
 
     # ── Unique customer visitors ──────────────────────────────────────────────
     row = conn.execute(

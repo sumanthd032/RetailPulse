@@ -24,7 +24,8 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 STORE_ID  = "STORE_BLR_002"
-DATE_BASE = datetime(2026, 3, 3, 10, 0, 0, tzinfo=timezone.utc)
+# Always use today so the dashboard shows data immediately on any day
+DATE_BASE = datetime.now(timezone.utc).replace(hour=10, minute=0, second=0, microsecond=0)
 
 
 def ts(minutes: float, seconds: float = 0) -> str:
@@ -153,6 +154,29 @@ def generate_events() -> list[dict]:
     return events
 
 
+def _write_aligned_pos(billing_minutes: list[float]):
+    """Write POS transactions aligned to billing event times.
+
+    For ~50% of billing events, create a POS transaction 2 minutes after
+    the visitor joined the billing queue. This simulates real conversion.
+    """
+    rows = []
+    basket_values = [1240, 680, 2100, 450, 3200, 890, 1560, 720, 1980, 540, 870, 1350]
+    converted_billing = billing_minutes[:len(billing_minutes)//2]  # convert first half
+    for i, billing_min in enumerate(converted_billing):
+        # POS happens 2-4 minutes after joining billing queue
+        pos_ts = (DATE_BASE + timedelta(minutes=billing_min + 2 + i * 0.5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        basket = basket_values[i % len(basket_values)]
+        rows.append(f"STORE_BLR_002,TXN_AUTO_{i+1:03d},{pos_ts},{basket}.00")
+
+    pos_path = ROOT / "data" / "pos_transactions.csv"
+    with open(pos_path, "w") as f:
+        f.write("store_id,transaction_id,timestamp,basket_value_inr\n")
+        f.write("\n".join(rows) + "\n")
+    today = DATE_BASE.strftime("%Y-%m-%d")
+    print(f"POS: {len(rows)} transactions for {today} (aligned to billing events)")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--api", default="http://localhost:8000")
@@ -160,7 +184,31 @@ def main():
     args = parser.parse_args()
 
     events = generate_events()
-    print(f"Generated {len(events)} events for {STORE_ID}")
+
+    # Extract billing event minute offsets to align POS transactions
+    billing_minutes = []
+    for e in events:
+        if e['event_type'] == 'BILLING_QUEUE_JOIN':
+            # Parse the timestamp and get minutes from DATE_BASE
+            from datetime import datetime, timezone as tz
+            et = datetime.strptime(e['timestamp'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=tz.utc)
+            diff_min = (et - DATE_BASE).total_seconds() / 60
+            billing_minutes.append(diff_min)
+
+    _write_aligned_pos(billing_minutes)
+
+    # Tell the running API to reload POS from the fresh CSV
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{args.api}/admin/reload-pos", data=b"", headers={"Content-Type": "application/json"}
+        )
+        result = json.loads(urllib.request.urlopen(req, timeout=5).read())
+        print(f"POS reloaded into API: {result.get('loaded', 0)} transactions")
+    except Exception:
+        pass  # API might not be running yet
+    today = DATE_BASE.strftime("%Y-%m-%d")
+    print(f"Generated {len(events)} events for {STORE_ID} on {today}")
 
     # Always write to file
     out = ROOT / "data" / "events.jsonl"
@@ -190,9 +238,10 @@ def main():
                 total_accepted += result.get("accepted", 0)
 
         print(f"Ingested {total_accepted} events via {args.api}")
+        print(f"Open http://localhost:8000 to see the dashboard")
     except Exception as e:
         print(f"API ingest failed: {e}")
-        print("API may not be running. Start it first with: uvicorn app.main:app --reload")
+        print("Is the API running? Start it with: .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000")
 
 
 if __name__ == "__main__":

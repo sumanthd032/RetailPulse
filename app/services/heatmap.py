@@ -8,14 +8,11 @@ from typing import Optional
 
 from ..db import get_db
 from ..models import HeatmapResponse, HeatmapZone
+from .utils import effective_date
 
 logger = logging.getLogger(__name__)
 
 DATA_CONFIDENCE_MIN_SESSIONS = 20
-
-
-def _today() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
 def _normalise(values: list[float]) -> list[float]:
@@ -34,10 +31,8 @@ def compute_heatmap(store_id: str, date: Optional[str] = None) -> HeatmapRespons
     Data confidence is flagged False when fewer than DATA_CONFIDENCE_MIN_SESSIONS
     sessions exist for the date — the heatmap on sparse data is noisy.
     """
-    if date is None:
-        date = _today()
-
     conn = get_db()
+    date = effective_date(store_id, conn, date)
 
     # Session count for confidence flag
     sess_row = conn.execute(

@@ -126,14 +126,19 @@ async def store_stream(store_id: str, request: Request):
 def _build_stream_bundle(store_id: str) -> dict:
     """Compute the full dashboard data bundle for SSE push."""
     from ..db import get_db
+    from ..services.utils import effective_date
     conn = get_db()
 
-    metrics   = compute_metrics(store_id)
-    funnel    = compute_funnel(store_id)
-    heatmap   = compute_heatmap(store_id)
+    # Use the most recent date with actual data — not today's date.
+    # This ensures the dashboard always shows real numbers regardless of
+    # when the events were ingested.
+    date = effective_date(store_id, conn)
+
+    metrics   = compute_metrics(store_id, date)
+    funnel    = compute_funnel(store_id, date)
+    heatmap   = compute_heatmap(store_id, date)
     anomalies = compute_anomalies(store_id)
 
-    # Recent events for live feed (last 20)
     rows = conn.execute(
         """
         SELECT event_id, visitor_id, event_type, timestamp,
@@ -141,18 +146,22 @@ def _build_stream_bundle(store_id: str) -> dict:
         FROM events
         WHERE store_id = ?
         ORDER BY ingested_at DESC, timestamp DESC
-        LIMIT 20
+        LIMIT 25
         """,
         (store_id,),
     ).fetchall()
     recent = [dict(r) for r in rows]
 
+    has_data = metrics.unique_visitors > 0 or len(recent) > 0
+
     return {
-        "store_id":  store_id,
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "metrics":   metrics.model_dump(),
-        "funnel":    funnel.model_dump(),
-        "heatmap":   heatmap.model_dump(),
-        "anomalies": anomalies.model_dump(),
+        "store_id":      store_id,
+        "effective_date": date,
+        "has_data":      has_data,
+        "timestamp":     datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "metrics":       metrics.model_dump(),
+        "funnel":        funnel.model_dump(),
+        "heatmap":       heatmap.model_dump(),
+        "anomalies":     anomalies.model_dump(),
         "recent_events": recent,
     }
