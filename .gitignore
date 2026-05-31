@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+pip-log.txt
+*.egg-info/
+dist/
+build/
+
+# ML models (large binaries)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.weights
+
+# Data files
+data/*.db
+data/*.csv
+data/events*.jsonl
+*.jsonl
+
+# Docs (local only)
+docs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Temp
+tmp/
+temp/
