@@ -10,7 +10,7 @@ End-to-end pipeline that turns raw CCTV footage into real-time store analytics. 
 
 ```bash
 # Clone
-git clone <repo-url> && cd RetailPulse
+git clone https:/github.com/sumanthd032/RetailPulse && cd RetailPulse
 
 # Python virtual environment (for the pipeline — heavier deps)
 python3 -m venv .venv
@@ -30,7 +30,7 @@ The API runs in Docker and doesn't need the venv.
 This single command does the entire end-to-end run with interactive terminal feedback:
 
 ```
-⚡ RetailPulse — Store Intelligence System
+RetailPulse — Store Intelligence System
 
 ▶ Step 1/5  Checking environment        ✓ Docker, compose, CCTV clips
 ▶ Step 2/5  Starting API (docker)       ✓ Image cached → API healthy in 5s
