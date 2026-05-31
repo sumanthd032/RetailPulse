@@ -27,8 +27,9 @@ data/events*.jsonl
 # POS data committed as sample (not gitignored)
 # data/pos_transactions.csv is tracked
 
-# Docs (local only)
-docs/
+# Docs planning notes (personal, not submission)
+docs/plan.md
+docs/decisions/
 
 # IDE
 .idea/
