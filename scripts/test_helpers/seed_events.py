@@ -1,15 +1,16 @@
-"""Seed synthetic events for API verification.
+"""TEST HELPER — NOT FOR DEMO OR SUBMISSION
 
-Generates a realistic 20-visitor session day for STORE_BLR_002:
-- 20 customers enter (3 staff)
-- Various zone visits
-- Some reach billing, some abandon, some convert
-- 1 group entry (3 together), 2 re-entries
+Generates synthetic events with current-day timestamps for testing the API
+without running the YOLO pipeline. Useful for verifying endpoint behaviour
+when you don't want to wait for actual video processing.
 
-Usage:
-    python scripts/seed_events.py [--api http://localhost:8000]
-    python scripts/seed_events.py --file-only   # just write to data/events.jsonl
+DO NOT use this for the dashboard demo or submission verification.
+For real footage data, use:
+    1. ./pipeline/run.sh
+    2. python scripts/ingest_real.py
 """
+
+
 
 from __future__ import annotations
 

@@ -23,7 +23,7 @@ class PipelineConfig:
     # gallery only matches visually very similar people — fewer false positives
     # at the cost of missing some genuine re-entries when clothing changes.
     # For retail CCTV with stable lighting and short sessions, 0.85 is conservative.
-    reid_similarity_threshold: float = 0.85
+    reid_similarity_threshold: float = 0.78
     reid_gallery_ttl_seconds: int = 300        # 5 minutes — gallery entry expiry
     reid_min_stable_frames: int = 8            # frames before gallery write (was 5)
     reid_camera_handoff_window_s: int = 30     # tighter window for same-frame handoff
