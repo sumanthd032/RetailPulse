@@ -1,0 +1,17 @@
+# Render Blueprint. Push this to GitHub, then in the Render dashboard:
+# New + → Blueprint → pick the RetailPulse repo. Render reads this file and
+# provisions the service. The free plan is enough for the demo (it sleeps after
+# ~15 min idle; the next request cold-starts in ~1 min and re-seeds the DB).
+services:
+  - type: web
+    name: retailpulse
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DB_PATH
+        value: /app/data/retail.db
+      - key: POS_CSV
+        value: /app/data/pos_transactions.csv

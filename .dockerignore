@@ -15,12 +15,13 @@ __pycache__
 # Large bind-mounted assets (mounted at runtime, not copied)
 Resources
 
-# Generated data — provided via the ./data volume at runtime
+# Generated data — provided via the ./data volume at runtime.
+# (events_real.jsonl is intentionally NOT ignored: Dockerfile.render bakes it
+#  into the single-container image for self-seeding on Render.)
 data/retail.db
 data/retail.db-shm
 data/retail.db-wal
 data/events.jsonl
-data/events_real.jsonl
 data/frames
 
 # Docs not needed at build time

@@ -1,0 +1,27 @@
+# Single-container image for Render (or any one-box Docker host).
+# Same lightweight runtime as the compose `api` image, but it also bakes in the
+# committed detection events + the ingest script and self-seeds on startup
+# (see scripts/render_start.sh) instead of relying on a separate ingest job.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ ./app/
+COPY data/store_layout.json ./data/store_layout.json
+COPY data/events_real.jsonl ./data/events_real.jsonl
+COPY scripts/ ./scripts/
+COPY scripts/render_start.sh ./render_start.sh
+RUN chmod +x render_start.sh
+
+# Render injects $PORT; default to 8000 for local runs of this image.
+EXPOSE 8000
+
+CMD ["./render_start.sh"]
