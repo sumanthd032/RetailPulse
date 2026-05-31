@@ -22,9 +22,10 @@ build/
 
 # Data files
 data/*.db
-data/*.csv
 data/events*.jsonl
 *.jsonl
+# POS data committed as sample (not gitignored)
+# data/pos_transactions.csv is tracked
 
 # Docs (local only)
 docs/
