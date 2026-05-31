@@ -42,27 +42,54 @@ def compute_heatmap(store_id: str, date: Optional[str] = None) -> HeatmapRespons
     session_count = int(sess_row["cnt"] or 0) if sess_row else 0
     overall_confidence = session_count >= DATA_CONFIDENCE_MIN_SESSIONS
 
-    # Per-zone metrics (cumulative max dwell per visitor per zone)
+    # Per-zone metrics:
+    # - visit_count from ZONE_ENTER events (always present, one per visit)
+    # - avg_dwell_ms from ZONE_EXIT events (dwell_ms is populated on exit) with
+    #   ZONE_DWELL as fallback when no exit was seen yet
     rows = conn.execute(
         """
         SELECT
-          zone_id,
-          COUNT(DISTINCT visitor_id) AS visit_count,
-          AVG(max_dwell)             AS avg_dwell_ms
+          enters.zone_id                              AS zone_id,
+          enters.visits                               AS visit_count,
+          COALESCE(exits.avg_dwell, dwells.avg_dwell, 0) AS avg_dwell_ms
         FROM (
-          SELECT zone_id, visitor_id, MAX(dwell_ms) AS max_dwell
+          SELECT zone_id, COUNT(DISTINCT visitor_id) AS visits
           FROM events
           WHERE store_id       = ?
-            AND event_type     = 'ZONE_DWELL'
+            AND event_type     = 'ZONE_ENTER'
             AND is_staff       = 0
             AND date(timestamp) = ?
             AND zone_id IS NOT NULL
-          GROUP BY zone_id, visitor_id
-        )
-        GROUP BY zone_id
-        ORDER BY visit_count DESC
+          GROUP BY zone_id
+        ) AS enters
+        LEFT JOIN (
+          SELECT zone_id, AVG(dwell_ms) AS avg_dwell
+          FROM events
+          WHERE store_id       = ?
+            AND event_type     = 'ZONE_EXIT'
+            AND is_staff       = 0
+            AND date(timestamp) = ?
+            AND zone_id IS NOT NULL
+            AND dwell_ms > 0
+          GROUP BY zone_id
+        ) AS exits ON enters.zone_id = exits.zone_id
+        LEFT JOIN (
+          SELECT zone_id, AVG(max_dwell) AS avg_dwell
+          FROM (
+            SELECT zone_id, visitor_id, MAX(dwell_ms) AS max_dwell
+            FROM events
+            WHERE store_id       = ?
+              AND event_type     = 'ZONE_DWELL'
+              AND is_staff       = 0
+              AND date(timestamp) = ?
+              AND zone_id IS NOT NULL
+            GROUP BY zone_id, visitor_id
+          )
+          GROUP BY zone_id
+        ) AS dwells ON enters.zone_id = dwells.zone_id
+        ORDER BY enters.visits DESC
         """,
-        (store_id, date),
+        (store_id, date, store_id, date, store_id, date),
     ).fetchall()
 
     if not rows:

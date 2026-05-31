@@ -29,6 +29,7 @@ data/events*.jsonl
 
 # Docs planning notes (personal, not submission)
 docs/plan.md
+docs/MASTER_PLAN.md
 docs/decisions/
 
 # IDE

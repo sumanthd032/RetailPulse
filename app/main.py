@@ -95,6 +95,19 @@ async def dashboard():
 
 # ── Health endpoint ────────────────────────────────────────────────────────────
 
+@app.post("/admin/reset", tags=["system"])
+async def reset_db():
+    """Wipe all events and visitor sessions. Used when reloading real data."""
+    from .db import get_db
+    conn = get_db()
+    conn.execute("DELETE FROM events")
+    conn.execute("DELETE FROM visitor_sessions")
+    conn.execute("DELETE FROM daily_snapshots")
+    conn.commit()
+    logger.info("DB reset — all events and sessions cleared")
+    return {"reset": True}
+
+
 @app.post("/admin/reload-pos", tags=["system"])
 async def reload_pos():
     """Reload POS transactions from CSV into the DB (call after updating the CSV)."""
