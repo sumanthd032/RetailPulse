@@ -1,0 +1,29 @@
+name: Keep Render warm
+
+# Render's free plan spins a web service down after ~15 min idle, so the next
+# visitor eats a ~1 min cold start. This pings /health every 10 min to keep the
+# demo instance awake. Set the RENDER_URL repo variable to your service URL:
+#   Settings → Secrets and variables → Actions → Variables → New variable
+#   name: RENDER_URL   value: https://retailpulse.onrender.com
+#
+# Note: GitHub may delay scheduled runs under load, and disables this schedule
+# after 60 days with no repo activity — re-enable it from the Actions tab.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          URL="${{ vars.RENDER_URL }}"
+          if [ -z "$URL" ]; then
+            echo "RENDER_URL repo variable is not set — skipping. See this file's header for setup."
+            exit 0
+          fi
+          echo "Pinging ${URL%/}/health"
+          curl -fsS --max-time 30 "${URL%/}/health" && echo "  ok"
