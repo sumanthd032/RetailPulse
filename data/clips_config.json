@@ -1,37 +1,42 @@
 [
   {
-    "clip_path": "Resources/CCTV Footage/CAM 1.mp4",
+    "clip_path": "Resources/CCTV Footage/CAM 3.mp4",
     "store_id": "STORE_BLR_002",
     "camera_id": "CAM_ENTRY_01",
     "camera_type": "entry",
-    "clip_start_time": "2026-03-03T10:00:00Z"
+    "clip_start_time": "2026-04-10T14:30:00Z",
+    "notes": "Entry/exit glass door camera. Wooden floor=inside, dark marble=outside. Entry line at y=0.52 horizontal."
+  },
+  {
+    "clip_path": "Resources/CCTV Footage/CAM 1.mp4",
+    "store_id": "STORE_BLR_002",
+    "camera_id": "CAM_FLOOR_01",
+    "camera_type": "floor",
+    "clip_start_time": "2026-04-10T14:35:00Z",
+    "notes": "Main brand shelf wall: The Face Shop, Good Vibes, Derma, Maybel. Camera elevated, looking at shelves."
   },
   {
     "clip_path": "Resources/CCTV Footage/CAM 2.mp4",
     "store_id": "STORE_BLR_002",
-    "camera_id": "CAM_FLOOR_01",
+    "camera_id": "CAM_FLOOR_02",
     "camera_type": "floor",
-    "clip_start_time": "2026-03-03T10:00:00Z"
-  },
-  {
-    "clip_path": "Resources/CCTV Footage/CAM 3.mp4",
-    "store_id": "STORE_BLR_002",
-    "camera_id": "CAM_BILLING_01",
-    "camera_type": "billing",
-    "clip_start_time": "2026-03-03T10:00:00Z"
-  },
-  {
-    "clip_path": "Resources/CCTV Footage/CAM 4.mp4",
-    "store_id": "STORE_BLR_003",
-    "camera_id": "CAM_ENTRY_01",
-    "camera_type": "entry",
-    "clip_start_time": "2026-03-03T10:00:00Z"
+    "clip_start_time": "2026-04-10T14:35:00Z",
+    "notes": "Colour cosmetics section: Lakme, FacesCanada, Maybelline, Swiss Beauty."
   },
   {
     "clip_path": "Resources/CCTV Footage/CAM 5.mp4",
-    "store_id": "STORE_BLR_003",
-    "camera_id": "CAM_FLOOR_01",
-    "camera_type": "floor",
-    "clip_start_time": "2026-03-03T10:00:00Z"
+    "store_id": "STORE_BLR_002",
+    "camera_id": "CAM_BILLING_01",
+    "camera_type": "billing",
+    "clip_start_time": "2026-04-10T14:30:00Z",
+    "notes": "Billing counter: POS laptop left side, queue area centre, accessories display right."
+  },
+  {
+    "clip_path": "Resources/CCTV Footage/CAM 4.mp4",
+    "store_id": "STORE_BLR_002",
+    "camera_id": "CAM_STOCKROOM_01",
+    "camera_type": "stockroom",
+    "clip_start_time": "2026-04-10T14:30:00Z",
+    "notes": "Back room/stockroom — Purplle branded boxes, no customers. SKIPPED in pipeline."
   }
 ]

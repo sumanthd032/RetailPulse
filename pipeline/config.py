@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 @dataclass
 class PipelineConfig:
     # ── Detection ──────────────────────────────────────────────────────────
-    yolo_model: str = "yolov9c.pt"
+    yolo_model: str = "yolov8n.pt"  # nano for speed; swap to yolov9c.pt for best accuracy
     detection_confidence: float = 0.35   # lower threshold — emit with confidence field
     nms_iou: float = 0.45
     imgsz: int = 640

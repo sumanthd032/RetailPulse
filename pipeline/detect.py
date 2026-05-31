@@ -205,10 +205,34 @@ class VisitorStateManager:
                         frame_ts, conf, is_staff, seq,
                     )
                     state.has_entered = True
+
                 elif is_brand_new and self._camera_type == "entry":
-                    # Will emit ENTRY only once the track has crossed the line
-                    # (handled below in line-crossing logic)
-                    pass
+                    # Check if person is already on the INSIDE of the entry threshold.
+                    # This happens when the clip starts with people already in the store,
+                    # or when the tracker stabilises several frames after someone entered.
+                    # In both cases we emit ENTRY immediately rather than waiting for a
+                    # threshold crossing that will never come.
+                    line = self._zones.get_entry_line(self._camera_id, w, h)
+                    already_inside = False
+                    if line is not None:
+                        lx1, ly1, lx2, ly2 = line
+                        cam_cfg = self._zones._cameras.get(self._camera_id)
+                        inbound = cam_cfg.inbound_side if cam_cfg else "right"
+                        is_horiz = abs(ly2 - ly1) < 2  # horizontal line (y1≈y2)
+                        if is_horiz:
+                            already_inside = (foot[1] < ly1) if inbound == "above" else (foot[1] > ly1)
+                        else:
+                            already_inside = (foot[0] > lx1) if inbound == "right" else (foot[0] < lx1)
+
+                    if already_inside:
+                        seq = state.next_seq()
+                        self._emitter.emit_entry(
+                            self._store_id, self._camera_id, visitor_id,
+                            frame_ts, conf, is_staff, seq,
+                        )
+                        state.has_entered = True
+                    # else: wait for explicit threshold crossing (handled below)
+
                 # For floor/billing cameras: no ENTRY event — camera handoff
             else:
                 state = self._active[track_id]

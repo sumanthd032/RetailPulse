@@ -123,6 +123,12 @@ def main() -> None:
 
         for clip_cfg in clips:
             clip_path = clip_cfg["clip_path"]
+
+            # Skip non-customer cameras (stockroom, etc.)
+            if clip_cfg.get("camera_type") == "stockroom":
+                logger.info("Skipping stockroom camera: %s", clip_path)
+                continue
+
             if not Path(clip_path).exists():
                 logger.warning("Clip not found, skipping: %s", clip_path)
                 continue
