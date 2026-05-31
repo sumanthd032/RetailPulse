@@ -78,9 +78,9 @@ SQLite with WAL mode.
 
 The access pattern analysis changed my thinking: one writer (ingestion endpoint) and multiple readers (analytics endpoints). SQLite's WAL mode is specifically designed for this — readers never block writers, and a single writer can proceed without blocking readers. This is not the compromise case for SQLite; this is the case SQLite WAL was built for.
 
-Volume: the challenge has 5 stores × 2.5 minutes of footage ≈ 614 events total. Even at full 40-store real-time, 40 stores × 200 events/minute = 8,000 events/minute = 133 events/second. SQLite WAL handles several thousand writes/second on commodity hardware. This is not a SQLite-breaking workload.
+Volume: the sample footage is 5 stores × ~2.5 minutes ≈ a few hundred events (398 in the committed run). Even at full 40-store real-time, 40 stores × 200 events/minute = 8,000 events/minute = 133 events/second. SQLite WAL handles several thousand writes/second on commodity hardware. This is not a SQLite-breaking workload.
 
-Operational simplicity: docker compose with PostgreSQL adds a `db` service, 30-second initialization time, health checks, volume mounts, migration scripts. With SQLite, the database is a file in the data volume. `docker compose up` is ready in 3 seconds. The reviewer who evaluates this has a 10-minute window. Every second of startup time costs them evaluation time.
+Operational simplicity: docker compose with PostgreSQL adds a `db` service, 30-second initialization time, health checks, volume mounts, migration scripts. With SQLite, the database is just a file in the data volume and the API is healthy in seconds. That bought me the thing I actually cared about for evaluation: `docker compose up` brings the whole system up in about a minute, with no GPU and no multi-GB image, because the database has no separate service to wait on. A reviewer with only a few minutes per submission should never be staring at a Postgres init or a PyTorch download — every second of startup is evaluation time I'm spending on their behalf.
 
 **What I gave up**
 

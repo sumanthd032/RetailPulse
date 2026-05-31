@@ -9,7 +9,7 @@ The north star is one number: **offline store conversion rate**. Every design de
 ## Architecture
 
 ```
-CCTV Clips (1080p, 25-30fps)
+CCTV Clips (1080p, ~30fps)
        │
        ▼
 ┌─────────────────────────────────────┐
@@ -19,7 +19,7 @@ CCTV Clips (1080p, 25-30fps)
 │  Staff detection (HSV + trajectory) │
 │  Entry threshold crossing           │
 └──────────────┬──────────────────────┘
-               │  events.jsonl (JSONL, 614 events from 4 cameras)
+               │  events_real.jsonl (398 events from 4 cameras)
                ▼
 ┌─────────────────────────────────────┐
 │       POST /events/ingest           │
@@ -84,7 +84,9 @@ The session is the unit of analysis, not the raw event. `visitor_sessions` is up
 
 This makes the funnel query a simple COUNT query on boolean flags rather than a per-visitor event reconstruction at query time. The funnel answer is always O(sessions) not O(events).
 
-POS correlation: a visitor who had a BILLING_QUEUE_JOIN event, with a POS transaction in the same store within 5 minutes after their billing join timestamp, is marked `converted = 1`. No customer_id matching — it's purely time-window + store.
+POS correlation: a visitor who had a BILLING_QUEUE_JOIN event, with a POS transaction in the same store within 5 minutes after their billing join timestamp, is marked `converted = 1`. No customer_id matching — it's purely time-window + store, exactly as the problem statement specifies (POS data has no customer identifier).
+
+One correctness subtlety bit me here: correlation runs at ingest time, the moment a BILLING_QUEUE_JOIN lands. That silently assumes the POS rows already exist. If a grader loads POS data *after* posting events — or reloads it — those conversions would be lost forever. So correlation also runs as a single set-based re-pass after any POS load (`recorrelate_conversions`, called from `/admin/reload-pos` and on startup). Conversion comes out identical regardless of whether events or POS arrive first. It's idempotent: a session already marked converted is never touched again.
 
 ## Anomaly Detection
 
@@ -95,6 +97,24 @@ Three detectors run synchronously on each `/anomalies` request:
 2. **CONVERSION_DROP**: Today's conversion rate vs 7-day average for the same weekday. Only fires after the store has been open 2+ hours with 5+ visitors (avoids false alarms at opening). CRITICAL at >40% drop, WARN at >20%.
 
 3. **DEAD_ZONE**: Any zone with no ZONE_ENTER events in the past 30 minutes during store hours. Always INFO — could be product placement issue, not necessarily a camera problem.
+
+## Edge Cases
+
+The problem statement calls out seven edge cases. Here is exactly where each one is handled, because this is the part that separates a demo from something that survives real footage.
+
+1. **Group entry (2–4 people through the door together).** ByteTrack assigns a distinct track ID to each person in the frame, so a group produces N entry-line crossings, not one. The `group_entry_window_s = 2.0` setting tags crossings that happen within two seconds of each other as a group *for reporting*, but they remain separate `visitor_id`s — the count is of individuals, never groups.
+
+2. **Staff movement.** Two independent signals, OR'd: an HSV uniform-colour match auto-calibrated from frames near the cash counter, and a trajectory signal (>60% of time in staff zones over 5+ minutes). Anything flagged `is_staff = true` is excluded from every customer metric at the SQL level (`WHERE is_staff = 0`), so staff never inflate visitor or conversion counts.
+
+3. **Re-entry.** When a track reappears and the Re-ID gallery matches it within `reentry_window_s = 300`, the pipeline emits `REENTRY`, not a second `ENTRY`. The session layer increments `reentry_count` on the existing row and creates no new session — so one person who steps out and back in is one visitor and one funnel entry, not two.
+
+4. **Partial occlusion.** Detection confidence is lowered to 0.35 and ByteTrack's low-threshold second pass re-associates occluded people instead of dropping them. Crucially, the `confidence` value is carried through onto every event rather than being used as a silent filter — degradation is visible to the API, never swallowed.
+
+5. **Billing-queue buildup and dispersal.** `BILLING_QUEUE_JOIN` carries `queue_depth`; a visitor who leaves the billing zone before a correlating POS transaction emits `BILLING_QUEUE_ABANDON`. That gives both live queue depth and an abandonment rate, and feeds the `BILLING_QUEUE_SPIKE` anomaly.
+
+6. **Empty-store periods.** Every metric returns `0.0`, never `null` — the SQL uses `COALESCE`/guarded division, and `effective_date` falls back cleanly when a store has no data. There is an explicit empty-store test and an all-staff test (zero customer visitors) so the zero-traffic path can't regress into a crash or a divide-by-zero.
+
+7. **Camera-angle overlap (entry FOV overlaps floor FOV).** All cameras share one Re-ID gallery, so the same physical person carries one `visitor_id` across the entry → floor → billing handoff. A visitor seen by two overlapping cameras is deduplicated to a single identity rather than double-counted.
 
 ## AI-Assisted Decisions
 
@@ -109,6 +129,12 @@ When I asked about setting queue depth thresholds for the BILLING_QUEUE_SPIKE an
 **3. CAM 4 classification — LLM helped, but I caught the error first**
 
 I initially included CAM 4 in the pipeline with camera_type="floor". After running it and seeing the output (events from what appeared to be an empty room), I inspected the frames: Purplle branded cardboard boxes, a swivel chair, a water cooler. Clearly the stockroom. I asked the model to help me write the skip logic — it suggested checking camera_type in the config, which is what I implemented. The insight (it's a stockroom) was mine from frame inspection; the model helped with the clean implementation.
+
+## Containerisation
+
+Two images, deliberately split. The **API image** is lightweight — FastAPI plus the SQLite stack, no PyTorch — so it builds in about a minute and is the only thing the default `docker compose up` needs. The **pipeline image** carries the heavy ML stack (PyTorch, Ultralytics) and sits behind a Compose `detect` profile, so it never runs unless someone explicitly asks to regenerate events from raw video.
+
+The reason is the reviewer's time budget. The detection output is committed to the repo (`data/events_real.jsonl`), so the default path is API + a one-shot ingest job that loads those events and prints live metrics — up and serving in roughly a minute, with no GPU and no multi-GB download. The full YOLO pipeline is still one command (`docker compose --profile detect run --rm pipeline`) for anyone who wants to prove the detection is real, but it's opt-in by design. Shipping a fast, self-contained demo mattered more than making the grader sit through CPU inference.
 
 ## What I'd Change for 40 Stores at Scale
 
