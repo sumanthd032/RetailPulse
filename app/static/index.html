@@ -1,596 +1,721 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RetailPulse — Store Intelligence</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    /* ── Design tokens ─────────────────────────────────────────────────── */
-    :root {
-      --bg-base:        #080D1A;
-      --bg-surface:     #0F1629;
-      --bg-raised:      #162040;
-      --bg-overlay:     rgba(15, 22, 41, 0.92);
-      --border:         rgba(99, 120, 190, 0.14);
-      --border-accent:  rgba(139, 92, 246, 0.35);
-      --purple:         #8B5CF6;
-      --purple-light:   #A78BFA;
-      --purple-glow:    rgba(139, 92, 246, 0.18);
-      --cyan:           #22D3EE;
-      --cyan-dim:       rgba(34, 211, 238, 0.12);
-      --green:          #10B981;
-      --green-dim:      rgba(16, 185, 129, 0.12);
-      --amber:          #F59E0B;
-      --amber-dim:      rgba(245, 158, 11, 0.12);
-      --red:            #EF4444;
-      --red-dim:        rgba(239, 68, 68, 0.12);
-      --text-primary:   #F0F4FF;
-      --text-secondary: #8898B8;
-      --text-muted:     #4A5878;
-      --radius-sm:      8px;
-      --radius-md:      12px;
-      --radius-lg:      16px;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RetailPulse — Store Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg0:#03080F; --bg1:#080E1C; --bg2:#0D1629; --bg3:#132038;
+  --border:rgba(79,120,200,.1); --border2:rgba(79,120,200,.2);
+  --purple:#9B7DF8; --purple2:#7C5CE8; --purple-dim:rgba(155,125,248,.08);
+  --cyan:#22D9FF; --cyan-dim:rgba(34,217,255,.08);
+  --green:#22E88A; --green-dim:rgba(34,232,138,.1);
+  --amber:#FFB347; --amber-dim:rgba(255,179,71,.1);
+  --red:#FF4F6D; --red-dim:rgba(255,79,109,.1);
+  --blue:#4B9FFF; --blue-dim:rgba(75,159,255,.1);
+  --txt:#D8E8FF; --txt2:#7B9AC8; --txt3:#3A5580;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 8px 32px rgba(0,0,0,.6);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg0);color:var(--txt);font-family:'Inter',sans-serif;font-size:13px;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.mono{font-family:'JetBrains Mono',monospace}
 
-    /* ── Reset & base ──────────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 14px; overflow-x: hidden; }
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(99,120,190,0.3); border-radius: 3px; }
+/* ── Shell ─────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr;height:100vh}
 
-    /* ── Layout ────────────────────────────────────────────────────────── */
-    .app { display: flex; flex-direction: column; min-height: 100vh; }
-    .content { flex: 1; padding: 0 24px 32px; max-width: 1440px; margin: 0 auto; width: 100%; }
+/* ── Sidebar ────────────────────────────────────── */
+.sidebar{
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:20px 14px;gap:6px;
+  overflow-y:auto;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 18px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.5px}
+.brand-name span{color:var(--purple)}
 
-    /* ── Header ────────────────────────────────────────────────────────── */
-    .header {
-      display: flex; align-items: center; gap: 20px;
-      padding: 0 24px; height: 64px;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 100;
-      backdrop-filter: blur(20px);
-    }
-    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--purple), var(--cyan)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-    .logo-text { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
-    .logo-text span { color: var(--purple-light); }
-    .header-sep { height: 28px; width: 1px; background: var(--border); margin: 0 4px; }
-    .store-select-wrapper { position: relative; }
-    .store-select {
-      appearance: none; background: var(--bg-raised); border: 1px solid var(--border);
-      color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 500;
-      padding: 7px 32px 7px 12px; border-radius: var(--radius-sm); cursor: pointer; outline: none;
-      transition: border-color 0.2s;
-    }
-    .store-select:focus { border-color: var(--border-accent); }
-    .select-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-secondary); font-size: 10px; }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-    .live-badge { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
-    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); position: relative; }
-    .live-dot.pulse::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: var(--green); opacity: 0; animation: pulse 2s infinite; }
-    .live-dot.error { background: var(--red); }
-    .live-dot.error::after { background: var(--red); }
-    @keyframes pulse { 0%,100%{opacity:0;transform:scale(1)} 50%{opacity:0.4;transform:scale(2.2)} }
-    .header-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); }
+.store-wrap{position:relative;margin-bottom:4px}
+.store-select{
+  width:100%;appearance:none;background:var(--bg2);border:1px solid var(--border2);
+  color:var(--txt);font-family:inherit;font-size:12px;font-weight:500;
+  padding:9px 28px 9px 12px;border-radius:var(--radius-sm);cursor:pointer;outline:none;
+  transition:border-color .2s;
+}
+.store-select:focus{border-color:var(--purple)}
+.store-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt2);pointer-events:none;font-size:10px}
 
-    /* ── Page header ───────────────────────────────────────────────────── */
-    .page-header { padding: 28px 0 20px; }
-    .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
-    .page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);padding:12px 6px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--txt2);cursor:pointer;transition:all .2s;font-weight:500}
+.nav-item:hover{background:var(--purple-dim);color:var(--txt)}
+.nav-item.active{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(155,125,248,.2)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
 
-    /* ── Card ──────────────────────────────────────────────────────────── */
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      position: relative;
-      transition: border-color 0.25s, box-shadow 0.25s;
-    }
-    .card:hover { border-color: rgba(99,120,190,0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-    .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+.sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
+.live-badge{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg2)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative;flex-shrink:0}
+.live-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--green);opacity:0;animation:pulse 2s infinite}
+.live-dot.error{background:var(--red)}
+.live-dot.error::after{background:var(--red);animation:none}
+.live-dot.connecting{background:var(--amber);animation:none}
+@keyframes pulse{0%,100%{opacity:0;transform:scale(1)}50%{opacity:.35;transform:scale(2.3)}}
+.live-text{font-size:11px;font-weight:600;color:var(--txt2)}
+.live-time{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3)}
 
-    /* ── KPI grid ──────────────────────────────────────────────────────── */
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    @media(max-width:1024px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:640px){.kpi-grid{grid-template-columns:1fr}}
+/* ── Main ───────────────────────────────────────── */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:0 24px;height:56px;
+  background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.page-title{font-size:16px;font-weight:700;letter-spacing:-.4px}
+.page-sub{font-size:11px;color:var(--txt2);margin-left:4px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.date-chip{font-size:11px;font-weight:500;color:var(--txt2);background:var(--bg2);padding:5px 10px;border-radius:99px;border:1px solid var(--border)}
+.api-docs-btn{font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-dim);padding:5px 12px;border-radius:99px;border:1px solid rgba(155,125,248,.2);cursor:pointer;text-decoration:none;transition:all .2s}
+.api-docs-btn:hover{background:rgba(155,125,248,.15)}
 
-    .kpi-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 20px 22px;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s;
-    }
-    .kpi-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-color, var(--purple)), transparent);
-      opacity: 0.6;
-    }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
-    .kpi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 17px; }
-    .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
-    .kpi-value { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
-    .kpi-sub { font-size: 12px; color: var(--text-secondary); }
-    .trend { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 99px; margin-left: 8px; }
-    .trend.up   { background: var(--green-dim); color: var(--green); }
-    .trend.down { background: var(--red-dim);   color: var(--red);   }
-    .trend.flat { background: var(--cyan-dim);  color: var(--cyan);  }
+.content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
 
-    /* KPI accent colours */
-    .kpi-visitors  { --accent-color: var(--purple); } .kpi-visitors  .kpi-icon { background: var(--purple-glow); }
-    .kpi-conv      { --accent-color: var(--green);  } .kpi-conv      .kpi-icon { background: var(--green-dim);  }
-    .kpi-queue     { --accent-color: var(--amber);  } .kpi-queue     .kpi-icon { background: var(--amber-dim);  }
-    .kpi-abandon   { --accent-color: var(--red);    } .kpi-abandon   .kpi-icon { background: var(--red-dim);    }
+/* ── KPI cards ──────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex-shrink:0}
+.kpi{
+  background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;position:relative;overflow:hidden;transition:all .25s;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--kpi-color),transparent);opacity:.7}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow)}
+.kpi-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.kpi-icon{width:32px;height:32px;border-radius:9px;background:var(--kpi-dim);display:flex;align-items:center;justify-content:center;font-size:15px}
+.kpi-trend{font-size:10px;font-weight:700;padding:3px 7px;border-radius:99px;letter-spacing:.3px}
+.kpi-trend.up{background:var(--green-dim);color:var(--green)}
+.kpi-trend.down{background:var(--red-dim);color:var(--red)}
+.kpi-trend.flat{background:var(--blue-dim);color:var(--blue)}
+.kpi-val{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.kpi-label{font-size:11px;font-weight:600;color:var(--txt2);letter-spacing:.2px;text-transform:uppercase;margin-bottom:10px}
+.kpi-spark{height:36px}
 
-    /* ── Charts row ────────────────────────────────────────────────────── */
-    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-    @media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.kpi-visitors {--kpi-color:var(--purple);--kpi-dim:var(--purple-dim)}
+.kpi-conv     {--kpi-color:var(--green);--kpi-dim:var(--green-dim)}
+.kpi-queue    {--kpi-color:var(--amber);--kpi-dim:var(--amber-dim)}
+.kpi-abandon  {--kpi-color:var(--red);--kpi-dim:var(--red-dim)}
 
-    /* Funnel */
-    .funnel-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .funnel-item { display: flex; flex-direction: column; gap: 6px; }
-    .funnel-meta { display: flex; justify-content: space-between; align-items: baseline; }
-    .funnel-stage-name { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
-    .funnel-count { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .funnel-bar-track { height: 8px; background: var(--bg-raised); border-radius: 99px; overflow: hidden; }
-    .funnel-bar-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
-    .funnel-dropoff { font-size: 10px; color: var(--red); font-weight: 500; }
+/* ── Middle row ─────────────────────────────────── */
+.mid-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
 
-    /* Heatmap */
-    .heatmap-grid { display: flex; flex-direction: column; gap: 8px; }
-    .heatmap-row { display: flex; align-items: center; gap: 12px; }
-    .heatmap-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; width: 110px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .heatmap-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-    .heatmap-bar-track { height: 5px; background: var(--bg-raised); border-radius: 99px; overflow: hidden; position: relative; }
-    .heatmap-bar-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
-    .heatmap-score { font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; width: 30px; text-align: right; }
-    .heatmap-empty { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 13px; }
+/* ── Card base ──────────────────────────────────── */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--txt2)}
+.card-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--purple-dim);color:var(--purple);margin-left:auto}
 
-    /* ── Bottom row ────────────────────────────────────────────────────── */
-    .bottom-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
-    @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+/* ── Floor plan ─────────────────────────────────── */
+.floor-wrap{position:relative}
+.floor-svg{width:100%;border-radius:9px;overflow:visible}
+.zone-rect{cursor:pointer;transition:fill .6s ease,opacity .3s}
+.zone-rect:hover{opacity:.85}
+.zone-label{font-family:'Inter',sans-serif;font-size:7.5px;font-weight:600;fill:rgba(216,232,255,.6);pointer-events:none;text-anchor:middle}
+.zone-sublabel{font-family:'Inter',sans-serif;font-size:6px;fill:rgba(216,232,255,.35);pointer-events:none;text-anchor:middle}
+.wall{fill:none;stroke:rgba(79,120,200,.25);stroke-width:1.5}
+.entry-door{fill:rgba(34,232,138,.15);stroke:var(--green);stroke-width:1}
+.entry-door-label{font-family:'Inter',sans-serif;font-size:7px;fill:var(--green);font-weight:700;text-anchor:middle}
+.plan-legend{display:flex;align-items:center;gap:12px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt2)}
+.legend-dot{width:8px;height:8px;border-radius:2px}
 
-    /* Anomaly panel */
-    .anomaly-list { display: flex; flex-direction: column; gap: 10px; }
-    .anomaly-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 12px 14px; border-radius: var(--radius-sm);
-      border: 1px solid var(--border); background: var(--bg-raised);
-      transition: all 0.3s;
-    }
-    .anomaly-item.CRITICAL { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.05); }
-    .anomaly-item.WARN     { border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.05); }
-    .anomaly-item.INFO     { border-color: rgba(34,211,238,0.25); background: rgba(34,211,238,0.04); }
-    .anomaly-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; padding: 3px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
-    .anomaly-badge.CRITICAL { background: rgba(239,68,68,0.2); color: #FCA5A5; }
-    .anomaly-badge.WARN     { background: rgba(245,158,11,0.2); color: #FCD34D; }
-    .anomaly-badge.INFO     { background: rgba(34,211,238,0.2); color: #67E8F9; }
-    .anomaly-content { flex: 1; min-width: 0; }
-    .anomaly-type { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
-    .anomaly-action { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
-    .anomaly-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
-    .anomaly-no-data { padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
-    .anomaly-good-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+/* ── Funnel ─────────────────────────────────────── */
+.funnel-wrap{display:flex;flex-direction:column;gap:10px}
+.funnel-stage{display:flex;flex-direction:column;gap:5px}
+.funnel-hdr{display:flex;justify-content:space-between;align-items:center}
+.funnel-name{font-size:11px;font-weight:600;color:var(--txt2)}
+.funnel-num{font-size:15px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.funnel-bar-bg{height:10px;background:var(--bg2);border-radius:99px;overflow:hidden}
+.funnel-bar-fg{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.funnel-drop{font-size:10px;color:var(--red);font-weight:600;margin-top:-2px}
+.funnel-connector{display:flex;align-items:center;gap:6px;padding:0 4px}
+.funnel-arrow{color:var(--txt3);font-size:10px}
+.funnel-drop-pct{font-size:10px;color:var(--red-dim);background:var(--red-dim);color:var(--red);padding:2px 6px;border-radius:4px;font-weight:700}
 
-    /* Event feed */
-    .feed-list { display: flex; flex-direction: column; gap: 0; max-height: 340px; overflow-y: auto; }
-    .feed-item {
-      display: grid; grid-template-columns: 120px 100px 1fr 90px;
-      align-items: center; gap: 12px;
-      padding: 9px 12px; border-bottom: 1px solid var(--border);
-      font-size: 11px; transition: background 0.2s; cursor: default;
-    }
-    .feed-item:last-child { border-bottom: none; }
-    .feed-item:hover { background: var(--bg-raised); }
-    .feed-item.new { animation: feedIn 0.4s ease-out; }
-    @keyframes feedIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
-    .feed-ts { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-    .feed-visitor { color: var(--purple-light); font-family: 'JetBrains Mono', monospace; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .feed-type-chip { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; background: var(--bg-raised); color: var(--text-secondary); }
-    .feed-type-chip.ENTRY              { background: rgba(139,92,246,0.15); color: var(--purple-light); }
-    .feed-type-chip.EXIT               { background: rgba(99,120,190,0.1);  color: #93A8D8; }
-    .feed-type-chip.ZONE_ENTER         { background: rgba(16,185,129,0.12); color: #6EE7B7; }
-    .feed-type-chip.ZONE_EXIT          { background: rgba(16,185,129,0.06); color: #4ADE80; }
-    .feed-type-chip.ZONE_DWELL         { background: rgba(34,211,238,0.1);  color: var(--cyan); }
-    .feed-type-chip.BILLING_QUEUE_JOIN { background: rgba(245,158,11,0.12); color: #FCD34D; }
-    .feed-type-chip.BILLING_QUEUE_ABANDON { background: rgba(239,68,68,0.1); color: #FCA5A5; }
-    .feed-type-chip.REENTRY            { background: rgba(167,139,250,0.15); color: #C4B5FD; }
-    .feed-zone { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .feed-empty { padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
+/* ── Bottom row ─────────────────────────────────── */
+.bot-row{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}
 
-    /* ── Empty state ───────────────────────────────────────────────────── */
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 12px; }
-    .empty-icon { font-size: 36px; opacity: 0.5; }
-    .empty-text { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+/* ── Anomalies ──────────────────────────────────── */
+.anomaly-list{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
+.anomaly{display:flex;gap:12px;padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);transition:all .3s}
+.anomaly.CRITICAL{border-color:rgba(255,79,109,.3);background:rgba(255,79,109,.04)}
+.anomaly.WARN{border-color:rgba(255,179,71,.3);background:rgba(255,179,71,.04)}
+.anomaly.INFO{border-color:rgba(75,159,255,.25);background:rgba(75,159,255,.03)}
+.a-badge{font-size:9px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:4px;flex-shrink:0;margin-top:1px;height:fit-content}
+.a-badge.CRITICAL{background:rgba(255,79,109,.15);color:#FF8FA5}
+.a-badge.WARN{background:rgba(255,179,71,.15);color:#FFD080}
+.a-badge.INFO{background:rgba(75,159,255,.15);color:#90C0FF}
+.a-type{font-size:11px;font-weight:700;margin-bottom:2px}
+.a-action{font-size:10px;color:var(--txt2);line-height:1.5}
+.a-meta{font-size:10px;color:var(--txt3);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.a-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;color:var(--txt3);gap:8px}
+.a-empty-icon{font-size:28px}
 
-    /* ── Loading shimmer ───────────────────────────────────────────────── */
-    .shimmer { background: linear-gradient(90deg, var(--bg-raised) 25%, var(--bg-surface) 50%, var(--bg-raised) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
-    @keyframes shimmer { to{background-position:-200% 0} }
+/* ── Event feed ─────────────────────────────────── */
+.feed{overflow:hidden}
+.feed-inner{display:flex;flex-direction:column;max-height:240px;overflow-y:auto;gap:0}
+.feed-row{display:grid;grid-template-columns:90px 100px 1fr 80px;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;transition:background .2s;cursor:default}
+.feed-row:hover{background:var(--bg2)}
+.feed-row.new{animation:feedSlide .35s ease-out}
+@keyframes feedSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.feed-ts{color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:10px}
+.feed-vis{color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.2px}
+.chip.ENTRY{background:rgba(155,125,248,.15);color:var(--purple)}
+.chip.EXIT{background:rgba(123,154,200,.1);color:#8AAAD8}
+.chip.ZONE_ENTER{background:rgba(34,232,138,.1);color:var(--green)}
+.chip.ZONE_EXIT{background:rgba(34,232,138,.06);color:#6EDDA8}
+.chip.ZONE_DWELL{background:rgba(34,217,255,.1);color:var(--cyan)}
+.chip.BILLING_QUEUE_JOIN{background:rgba(255,179,71,.12);color:var(--amber)}
+.chip.BILLING_QUEUE_ABANDON{background:rgba(255,79,109,.1);color:var(--red)}
+.chip.REENTRY{background:rgba(155,125,248,.12);color:#BFB0F8}
+.feed-zone{color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-empty{padding:40px;text-align:center;color:var(--txt3);font-size:12px}
 
-    /* ── Utility ───────────────────────────────────────────────────────── */
-    .flex { display: flex; } .items-center { align-items: center; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
-    .ml-auto { margin-left: auto; } .text-muted { color: var(--text-muted); }
-    .font-mono { font-family: 'JetBrains Mono', monospace; }
-    .no-data-confidence { font-size: 10px; color: var(--amber); background: var(--amber-dim); padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
-  </style>
+/* ── Empty / loading states ─────────────────────── */
+.shimmer{background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);background-size:200% 100%;animation:sh 1.6s infinite;border-radius:4px}
+@keyframes sh{to{background-position:-200% 0}}
+.conf-warn{font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:4px;margin-left:auto}
+</style>
 </head>
+<body>
+<div class="shell">
 
-<body class="app">
-
-  <!-- ── Header ─────────────────────────────────────────────────────────── -->
-  <header class="header">
-    <a class="logo" href="/">
-      <div class="logo-icon">⚡</div>
-      <span class="logo-text">Retail<span>Pulse</span></span>
-    </a>
-
-    <div class="header-sep"></div>
-
-    <div class="store-select-wrapper">
-      <select id="storeSelect" class="store-select" onchange="changeStore(this.value)">
-        <option value="">Loading stores…</option>
-      </select>
-      <span class="select-arrow">▾</span>
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">⚡</div>
+    <div>
+      <div class="brand-name">Retail<span>Pulse</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-top:1px">Store Intelligence</div>
     </div>
+  </div>
 
-    <div class="header-right">
-      <div class="live-badge">
-        <div class="live-dot pulse" id="liveDot"></div>
-        <span id="liveStatus">Connecting…</span>
-      </div>
-      <div class="header-sep"></div>
-      <div class="header-time" id="headerTime">--:--:--</div>
+  <div class="store-wrap">
+    <select id="storeSelect" class="store-select" onchange="changeStore(this.value)">
+      <option>Loading…</option>
+    </select>
+    <span class="store-arrow">▾</span>
+  </div>
+
+  <div class="nav-label">Navigation</div>
+  <div class="nav-item active"><span class="nav-icon">📊</span> Overview</div>
+  <div class="nav-item" onclick="window.open('/api/docs','_blank')"><span class="nav-icon">🔌</span> API Docs</div>
+  <div class="nav-item" onclick="window.open('/health','_blank')"><span class="nav-icon">❤️</span> Health</div>
+
+  <div class="nav-label">Date Range</div>
+  <div style="padding:0 6px">
+    <input type="date" id="datePicker" style="width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--txt);font-family:inherit;font-size:11px;padding:8px 10px;border-radius:var(--radius-sm);outline:none" onchange="changeDate(this.value)"/>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="live-badge">
+      <div class="live-dot connecting" id="liveDot"></div>
+      <span class="live-text" id="liveStatus">Connecting…</span>
+      <span class="live-time" id="liveTime">--:--</span>
     </div>
-  </header>
+    <div style="margin-top:10px;padding:0 2px;font-size:10px;color:var(--txt3);line-height:1.6">
+      Powered by YOLOv8 + ByteTrack<br>
+      614 events · 4 cameras · Real footage
+    </div>
+  </div>
+</aside>
 
-  <!-- ── Main content ──────────────────────────────────────────────────── -->
+<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <span class="page-title" id="pageTitle">Store Overview</span>
+      <span class="page-sub" id="pageStoreId">— STORE_BLR_002</span>
+    </div>
+    <div class="topbar-right">
+      <div class="date-chip" id="dateChip">📅 2026-04-10</div>
+      <a class="api-docs-btn" href="/api/docs" target="_blank">API Docs ↗</a>
+    </div>
+  </div>
+
   <div class="content">
 
-    <div class="page-header">
-      <h1 class="page-title" id="pageTitle">Store Intelligence Dashboard</h1>
-      <p class="page-subtitle" id="pageSubtitle">Real-time analytics from CCTV event stream · Today</p>
-    </div>
-
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card kpi-visitors">
-        <div class="kpi-icon">👥</div>
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi kpi-visitors">
+        <div class="kpi-header">
+          <div class="kpi-icon">👥</div>
+          <div class="kpi-trend flat" id="visitorsTrend">—</div>
+        </div>
+        <div class="kpi-val" id="kpiVisitors">—</div>
         <div class="kpi-label">Unique Visitors</div>
-        <div class="kpi-value" id="kpiVisitors">—</div>
-        <div class="kpi-sub">customers today</div>
+        <canvas class="kpi-spark" id="sparkVisitors"></canvas>
       </div>
-      <div class="kpi-card kpi-conv">
-        <div class="kpi-icon">🎯</div>
+      <div class="kpi kpi-conv">
+        <div class="kpi-header">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-trend flat" id="convTrend">—</div>
+        </div>
+        <div class="kpi-val" id="kpiConv">—</div>
         <div class="kpi-label">Conversion Rate</div>
-        <div class="kpi-value" id="kpiConversion">—</div>
-        <div class="kpi-sub">visitors who purchased</div>
+        <canvas class="kpi-spark" id="sparkConv"></canvas>
       </div>
-      <div class="kpi-card kpi-queue">
-        <div class="kpi-icon">⏳</div>
+      <div class="kpi kpi-queue">
+        <div class="kpi-header">
+          <div class="kpi-icon">⏳</div>
+          <div class="kpi-trend flat" id="queueTrend">—</div>
+        </div>
+        <div class="kpi-val" id="kpiQueue">—</div>
         <div class="kpi-label">Queue Depth</div>
-        <div class="kpi-value" id="kpiQueue">—</div>
-        <div class="kpi-sub">at billing counter now</div>
+        <canvas class="kpi-spark" id="sparkQueue"></canvas>
       </div>
-      <div class="kpi-card kpi-abandon">
-        <div class="kpi-icon">🚪</div>
+      <div class="kpi kpi-abandon">
+        <div class="kpi-header">
+          <div class="kpi-icon">🚪</div>
+          <div class="kpi-trend flat" id="abandonTrend">—</div>
+        </div>
+        <div class="kpi-val" id="kpiAbandon">—</div>
         <div class="kpi-label">Abandonment Rate</div>
-        <div class="kpi-value" id="kpiAbandonment">—</div>
-        <div class="kpi-sub">left queue without buying</div>
+        <canvas class="kpi-spark" id="sparkAbandon"></canvas>
       </div>
     </div>
 
-    <!-- Charts row -->
-    <div class="charts-grid">
+    <!-- Middle row: floor plan + funnel -->
+    <div class="mid-row">
 
-      <!-- Funnel -->
+      <!-- Store Floor Plan -->
       <div class="card">
-        <div class="card-title">Conversion Funnel</div>
-        <ul class="funnel-list" id="funnelList">
-          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
-          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
-          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
-          <li class="funnel-item"><div style="height:60px" class="shimmer"></div></li>
-        </ul>
+        <div class="card-hdr">
+          <div class="card-title">🏪 Store Floor Plan — Live Heatmap</div>
+          <div class="conf-warn" id="heatmapConf" style="display:none">Low data</div>
+        </div>
+        <div class="floor-wrap">
+          <svg class="floor-svg" viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg">
+            <!-- Store boundary -->
+            <rect x="1" y="1" width="818" height="358" rx="8" fill="#0D1629" stroke="rgba(79,120,200,.3)" stroke-width="1.5"/>
+
+            <!-- Entry door (left) -->
+            <rect class="entry-door" x="1" y="130" width="30" height="100" rx="4"/>
+            <text class="entry-door-label" x="16" y="186">ENTRY</text>
+
+            <!-- Top shelf bays -->
+            <rect class="zone-rect" data-zone="TFS_GOODVIBES_SHELF"     x="35"  y="4"  width="130" height="65" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="100" y="30">The Face Shop</text>
+            <text class="zone-sublabel" x="100" y="42">Good Vibes</text>
+
+            <rect class="zone-rect" data-zone="DERMA_MINIMALIST_SHELF"  x="170" y="4"  width="140" height="65" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="240" y="30">DermDoc</text>
+            <text class="zone-sublabel" x="240" y="42">Minimalist</text>
+
+            <rect class="zone-rect" data-zone="MAYBEL_SHELF"            x="315" y="4"  width="140" height="65" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="385" y="30">Maybel</text>
+            <text class="zone-sublabel" x="385" y="42">Aqualogica</text>
+
+            <rect x="460" y="4" width="110" height="65" rx="4" fill="#111F3A" opacity=".6"/>
+            <text class="zone-sublabel" x="515" y="35">Other Brands</text>
+
+            <!-- Left mid section -->
+            <rect class="zone-rect" data-zone="FOH"                     x="35"  y="74"  width="80" height="155" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="75" y="150">F.O.H</text>
+
+            <!-- Center: Makeup display -->
+            <rect class="zone-rect" data-zone="MAKEUP_DISPLAY_CENTRE"   x="120" y="74"  width="180" height="80" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="210" y="108">Makeup Units</text>
+
+            <!-- Open floor -->
+            <rect x="120" y="159" width="270" height="70" rx="4" fill="#0D1629" opacity=".4"/>
+            <text class="zone-sublabel" x="255" y="198">Open Floor</text>
+
+            <!-- Consultation area -->
+            <rect class="zone-rect" data-zone="CONSULTATION_AREA"       x="305" y="74"  width="130" height="155" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="370" y="148">Consultation</text>
+
+            <!-- Bottom shelf bays -->
+            <rect class="zone-rect" data-zone="LAKME_FACESCANADA_SHELF" x="35"  y="234" width="165" height="65" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="118" y="261">Lakme</text>
+            <text class="zone-sublabel" x="118" y="273">FacesCanada</text>
+
+            <rect class="zone-rect" data-zone="MAYBELLINE_SWISS_SHELF"  x="205" y="234" width="165" height="65" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="288" y="261">Maybelline</text>
+            <text class="zone-sublabel" x="288" y="273">Swiss Beauty</text>
+
+            <rect x="375" y="234" width="90" height="65" rx="4" fill="#111F3A" opacity=".6"/>
+            <text class="zone-sublabel" x="420" y="266">Mars+Nybae</text>
+
+            <!-- Billing area (right) -->
+            <rect x="580" y="4" width="10" height="352" fill="rgba(79,120,200,.1)"/>
+            <rect class="zone-rect" data-zone="BILLING_QUEUE"           x="594" y="4"   width="140" height="280" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" x="664" y="120">Billing Queue</text>
+            <text class="zone-sublabel" x="664" y="134">Customer Area</text>
+
+            <rect class="zone-rect" data-zone="CASH_COUNTER"            x="594" y="288" width="140" height="68" rx="4" fill="#132038"/>
+            <text class="zone-label" x="664" y="318">Cash Counter</text>
+            <text class="zone-sublabel" x="664" y="330">Staff Zone ⭐</text>
+
+            <rect class="zone-rect" data-zone="ACCESSORIES_DISPLAY"     x="740" y="4"   width="76" height="352" rx="4" fill="#1A2F54"/>
+            <text class="zone-label" transform="rotate(-90,778,180)" x="778" y="180">Accessories</text>
+
+            <!-- Entry threshold line -->
+            <line x1="32" y1="130" x2="32" y2="230" stroke="var(--green)" stroke-width="2" stroke-dasharray="4,3" opacity=".7"/>
+            <polygon points="35,160 40,165 35,170" fill="var(--green)" opacity=".7"/>
+
+            <!-- Visitor count indicator -->
+            <rect x="470" y="74" width="105" height="155" rx="4" fill="#0D1629" opacity=".5"/>
+            <text class="zone-sublabel" x="522" y="140">Fragrance</text>
+            <text class="zone-sublabel" x="522" y="154">& Nail Zone</text>
+          </svg>
+        </div>
+        <div class="plan-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1D4ED8;opacity:.7"></div>Low activity</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#7C3AED;opacity:.7"></div>Medium</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#DC2626;opacity:.7"></div>High activity</div>
+          <div class="legend-item" style="margin-left:auto;font-size:10px;color:var(--txt3)">Zones from real footage calibration</div>
+        </div>
       </div>
 
-      <!-- Heatmap -->
+      <!-- Conversion Funnel -->
       <div class="card">
-        <div class="card-title flex items-center gap-2">
-          Zone Heatmap
-          <span id="heatmapConfidence" class="no-data-confidence" style="display:none">Low confidence</span>
+        <div class="card-hdr">
+          <div class="card-title">🔽 Conversion Funnel</div>
+          <div class="card-badge" id="funnelDate">—</div>
         </div>
-        <div class="heatmap-grid" id="heatmapGrid">
-          <div class="heatmap-empty">Loading zone data…</div>
+        <div class="funnel-wrap" id="funnelWrap">
+          <div class="shimmer" style="height:180px;border-radius:8px"></div>
         </div>
       </div>
 
     </div>
 
-    <!-- Bottom row -->
-    <div class="bottom-grid">
+    <!-- Bottom row: anomalies + feed -->
+    <div class="bot-row">
 
       <!-- Anomalies -->
       <div class="card">
-        <div class="card-title">Active Anomalies</div>
-        <div id="anomalyPanel">
-          <div class="anomaly-no-data"><span class="anomaly-good-icon">✅</span>All systems normal</div>
+        <div class="card-hdr">
+          <div class="card-title">🚨 Active Anomalies</div>
+          <div class="card-badge" id="anomalyCount" style="background:var(--green-dim);color:var(--green)">All clear</div>
+        </div>
+        <div class="anomaly-list" id="anomalyList">
+          <div class="a-empty"><span class="a-empty-icon">✅</span>No anomalies detected</div>
         </div>
       </div>
 
       <!-- Live event feed -->
-      <div class="card">
-        <div class="card-title flex items-center">
-          Live Event Feed
-          <span class="ml-auto text-muted font-mono" style="font-size:11px" id="feedCount">0 events</span>
+      <div class="card feed">
+        <div class="card-hdr">
+          <div class="card-title">⚡ Live Event Feed</div>
+          <div class="card-badge" id="feedCount" style="background:var(--cyan-dim);color:var(--cyan)">0 events</div>
         </div>
-        <div class="feed-list" id="feedList">
-          <div class="feed-empty">Waiting for events…</div>
+        <div class="feed-inner" id="feedList">
+          <div class="feed-empty">Waiting for live events…</div>
         </div>
       </div>
 
     </div>
 
   </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
-let currentStore   = null;
-let eventSource    = null;
-let prevMetrics    = {};
-let totalEvents    = 0;
-const FUNNEL_COLORS = ['#8B5CF6','#7C3AED','#6D28D9','#5B21B6'];
+// ── State ─────────────────────────────────────────────────────────
+let store       = 'STORE_BLR_002';
+let queryDate   = '';
+let es          = null;
+let prevMetrics = {};
+let sparkData   = {visitors:[],conv:[],queue:[],abandon:[]};
+let feedIds     = new Set();
+let sparkCharts = {};
+const FUNNEL_COLORS = ['#9B7DF8','#7C5CE8','#5B3CC8','#3A1EA8'];
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-async function init() {
-  startClock();
-  await loadStores();
+// ── Sparkline setup ───────────────────────────────────────────────
+function initSparks() {
+  const cfg = (color) => ({
+    type:'line',
+    data:{labels:Array(20).fill(''),datasets:[{data:Array(20).fill(null),borderColor:color,borderWidth:2,fill:true,backgroundColor:color+'18',tension:.4,pointRadius:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:{duration:400}}
+  });
+  sparkCharts.visitors = new Chart(document.getElementById('sparkVisitors'), cfg('var(--purple)'));
+  sparkCharts.conv     = new Chart(document.getElementById('sparkConv'),     cfg('#22E88A'));
+  sparkCharts.queue    = new Chart(document.getElementById('sparkQueue'),    cfg('#FFB347'));
+  sparkCharts.abandon  = new Chart(document.getElementById('sparkAbandon'),  cfg('#FF4F6D'));
 }
 
-function startClock() {
-  const el = document.getElementById('headerTime');
-  setInterval(() => {
-    const now = new Date();
-    el.textContent = now.toLocaleTimeString('en-IN', {timeZone:'Asia/Kolkata',hour12:false}) + ' IST';
-  }, 1000);
+function pushSpark(key, val, chartKey) {
+  sparkData[key].push(val);
+  if (sparkData[key].length > 20) sparkData[key].shift();
+  const chart = sparkCharts[chartKey];
+  chart.data.datasets[0].data = [...sparkData[key]];
+  chart.update('none');
+}
+
+// ── Clock ─────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('liveTime').textContent =
+    new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour12:false}).slice(0,5);
+}, 1000);
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init() {
+  initSparks();
+  // Set default date to today or known clip date
+  const today = new Date().toISOString().split('T')[0];
+  queryDate = today;
+  document.getElementById('datePicker').value = today;
+  document.getElementById('dateChip').textContent = '📅 ' + today;
+  await loadStores();
 }
 
 async function loadStores() {
   try {
-    const res   = await fetch('/stores');
-    const data  = await res.json();
-    const sel   = document.getElementById('storeSelect');
+    const r = await fetch('/stores');
+    const d = await r.json();
+    const sel = document.getElementById('storeSelect');
     sel.innerHTML = '';
-    const stores = data.stores || ['STORE_BLR_002'];
-    stores.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      sel.appendChild(opt);
+    (d.stores||['STORE_BLR_002']).forEach(s => {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s.replace(/_/g,' ');
+      sel.appendChild(o);
     });
-    changeStore(stores[0]);
-  } catch(e) {
-    changeStore('STORE_BLR_002');
-  }
+    changeStore(d.stores?.[0]||'STORE_BLR_002');
+  } catch { changeStore('STORE_BLR_002'); }
 }
 
-function changeStore(storeId) {
-  if (!storeId) return;
-  currentStore = storeId;
-  document.getElementById('pageTitle').textContent = storeId.replace('_', ' ').replace('_', ' ');
-  document.getElementById('storeSelect').value = storeId;
-  connectSSE(storeId);
+function changeStore(s) {
+  store = s;
+  document.getElementById('pageStoreId').textContent = '— ' + s;
+  document.getElementById('storeSelect').value = s;
+  connectSSE();
 }
 
-// ── SSE connection ────────────────────────────────────────────────────────────
-function connectSSE(storeId) {
-  if (eventSource) { eventSource.close(); }
+function changeDate(d) {
+  queryDate = d;
+  document.getElementById('dateChip').textContent = '📅 ' + d;
+  connectSSE();
+}
 
-  setStatus('connecting');
-  eventSource = new EventSource(`/stores/${storeId}/stream`);
-
-  eventSource.onopen = () => setStatus('live');
-  eventSource.onerror = () => {
-    setStatus('error');
-    setTimeout(() => connectSSE(storeId), 5000);
-  };
-  eventSource.onmessage = (e) => {
+// ── SSE ───────────────────────────────────────────────────────────
+function connectSSE() {
+  if (es) es.close();
+  setDot('connecting');
+  es = new EventSource(`/stores/${store}/stream`);
+  es.onopen = () => setDot('live');
+  es.onerror = () => { setDot('error'); setTimeout(connectSSE, 5000); };
+  es.onmessage = (e) => {
     try {
-      const bundle = JSON.parse(e.data);
-      if (bundle.error) { console.error('SSE error:', bundle.error); return; }
-      renderBundle(bundle);
-    } catch(ex) { console.error('SSE parse error:', ex); }
+      const b = JSON.parse(e.data);
+      if (b.error) return;
+      renderAll(b);
+    } catch {}
   };
 }
 
-function setStatus(state) {
-  const dot  = document.getElementById('liveDot');
-  const text = document.getElementById('liveStatus');
-  dot.className = 'live-dot';
-  if (state === 'live')       { dot.classList.add('pulse'); text.textContent = 'Live'; }
-  else if (state === 'error') { dot.classList.add('error');  text.textContent = 'Reconnecting…'; }
-  else                        { text.textContent = 'Connecting…'; }
+function setDot(state) {
+  const d = document.getElementById('liveDot');
+  const t = document.getElementById('liveStatus');
+  d.className = 'live-dot';
+  if (state === 'live')       { d.classList.add('live-dot'); t.textContent = 'Live'; }
+  else if (state === 'error') { d.className = 'live-dot error'; t.textContent = 'Reconnecting…'; }
+  else                        { d.className = 'live-dot connecting'; t.textContent = 'Connecting…'; }
 }
 
-// ── Render bundle ─────────────────────────────────────────────────────────────
-function renderBundle(bundle) {
-  renderMetrics(bundle.metrics  || {});
-  renderFunnel(bundle.funnel    || {});
-  renderHeatmap(bundle.heatmap  || {});
-  renderAnomalies(bundle.anomalies || {});
-  renderFeed(bundle.recent_events || []);
+// ── Render all ────────────────────────────────────────────────────
+function renderAll(b) {
+  renderMetrics(b.metrics  || {});
+  renderFunnel(b.funnel    || {});
+  renderHeatmap(b.heatmap  || {});
+  renderAnomalies(b.anomalies || {});
+  renderFeed(b.recent_events || []);
 }
 
-// ── KPI cards ─────────────────────────────────────────────────────────────────
+// ── Metrics ───────────────────────────────────────────────────────
 function renderMetrics(m) {
-  animateValue('kpiVisitors',   prevMetrics.unique_visitors   || 0, m.unique_visitors   || 0, v => Math.round(v).toLocaleString());
-  animateValue('kpiConversion', prevMetrics.conversion_rate   || 0, m.conversion_rate   || 0, v => (v*100).toFixed(1) + '%');
-  animateValue('kpiQueue',      prevMetrics.current_queue_depth||0, m.current_queue_depth||0, v => Math.round(v).toString());
-  animateValue('kpiAbandonment',prevMetrics.abandonment_rate  || 0, m.abandonment_rate  || 0, v => (v*100).toFixed(1) + '%');
+  const v = m.unique_visitors     || 0;
+  const c = m.conversion_rate     || 0;
+  const q = m.current_queue_depth || 0;
+  const a = m.abandonment_rate    || 0;
 
-  // Color-code queue depth
+  anim('kpiVisitors', prevMetrics.v||0, v, x => Math.round(x).toLocaleString());
+  anim('kpiConv',     prevMetrics.c||0, c, x => (x*100).toFixed(1)+'%');
+  anim('kpiQueue',    prevMetrics.q||0, q, x => Math.round(x).toString());
+  anim('kpiAbandon',  prevMetrics.a||0, a, x => (x*100).toFixed(1)+'%');
+
+  // Color queue by severity
   const qEl = document.getElementById('kpiQueue');
-  const qd  = m.current_queue_depth || 0;
-  qEl.style.color = qd >= 8 ? 'var(--red)' : qd >= 5 ? 'var(--amber)' : 'var(--text-primary)';
+  qEl.style.color = q>=8 ? 'var(--red)' : q>=5 ? 'var(--amber)' : 'var(--txt)';
 
-  prevMetrics = { ...m };
+  // Trends vs previous
+  setTrend('visitorsTrend', v, prevMetrics.v);
+  setTrend('convTrend',     c, prevMetrics.c);
+  setTrend('queueTrend',    q, prevMetrics.q, true); // higher queue = worse
+  setTrend('abandonTrend',  a, prevMetrics.a, true);
+
+  // Sparklines
+  pushSpark('visitors', v, 'visitors');
+  pushSpark('conv',     c*100, 'conv');
+  pushSpark('queue',    q, 'queue');
+  pushSpark('abandon',  a*100, 'abandon');
+
+  prevMetrics = {v,c,q,a};
 }
 
-function animateValue(id, from, to, fmt, duration = 700) {
-  const el   = document.getElementById(id);
+function setTrend(id, cur, prev, invertGood=false) {
+  const el = document.getElementById(id);
+  if (prev === undefined || cur === prev) { el.className='kpi-trend flat'; el.textContent='—'; return; }
+  const up = cur > prev;
+  const good = invertGood ? !up : up;
+  el.className = 'kpi-trend ' + (good?'up':'down');
+  el.textContent = (up?'↑':'↓') + ' ' + Math.abs(((cur-prev)/Math.max(Math.abs(prev),0.0001)*100)).toFixed(0)+'%';
+}
+
+function anim(id, from, to, fmt, dur=700) {
+  const el = document.getElementById(id);
   if (!el) return;
-  const start = performance.now();
-  const tick  = (now) => {
-    const p = Math.min((now - start) / duration, 1);
-    const e = 1 - Math.pow(1 - p, 3); // cubic ease-out
-    el.textContent = fmt(from + (to - from) * e);
-    if (p < 1) requestAnimationFrame(tick);
+  const t0 = performance.now();
+  const tick = (now) => {
+    const p = Math.min((now-t0)/dur, 1);
+    const e = 1 - Math.pow(1-p, 3);
+    el.textContent = fmt(from + (to-from)*e);
+    if (p<1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
 
-// ── Funnel ────────────────────────────────────────────────────────────────────
+// ── Funnel ────────────────────────────────────────────────────────
 function renderFunnel(data) {
+  const wrap = document.getElementById('funnelWrap');
   const stages = data.stages || [];
-  const list   = document.getElementById('funnelList');
-  if (!stages.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No funnel data yet.<br>Ingest events to see the funnel.</div></div>'; return; }
+  document.getElementById('funnelDate').textContent = data.date || '—';
 
-  const maxCount = stages[0]?.count || 1;
-  list.innerHTML = stages.map((s, i) => {
-    const pct   = maxCount > 0 ? (s.count / maxCount * 100).toFixed(0) : 0;
-    const color = FUNNEL_COLORS[i] || '#4C1D95';
-    const drop  = s.drop_off_pct > 0 ? `<span class="funnel-dropoff">↓ ${s.drop_off_pct}% drop</span>` : '';
+  if (!stages.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--txt3)">No funnel data yet</div>';
+    return;
+  }
+
+  const max = stages[0]?.count || 1;
+  wrap.innerHTML = stages.map((s,i) => {
+    const pct  = max > 0 ? Math.round(s.count/max*100) : 0;
+    const col  = FUNNEL_COLORS[i] || '#3A1EA8';
+    const drop = i > 0 && s.drop_off_pct > 0 ? `<span class="funnel-drop">↓ ${s.drop_off_pct}% dropped off</span>` : '';
     return `
-      <li class="funnel-item">
-        <div class="funnel-meta">
-          <span class="funnel-stage-name">${s.stage}</span>
-          <span class="funnel-count">${s.count.toLocaleString()} ${drop}</span>
+      <div class="funnel-stage">
+        <div class="funnel-hdr">
+          <span class="funnel-name">${s.stage}</span>
+          <span class="funnel-num" style="color:${col}">${s.count.toLocaleString()}</span>
         </div>
-        <div class="funnel-bar-track">
-          <div class="funnel-bar-fill" style="width:${pct}%;background:${color}"></div>
+        <div class="funnel-bar-bg">
+          <div class="funnel-bar-fg" style="width:${pct}%;background:linear-gradient(90deg,${col},${col}88)"></div>
         </div>
-      </li>`;
+        ${drop}
+      </div>`;
   }).join('');
 }
 
-// ── Heatmap ───────────────────────────────────────────────────────────────────
-function scoreColor(score) {
-  // 0→cool blue, 50→purple, 100→hot red
-  if (score <= 50) {
-    const t = score / 50;
-    return interpolate('#1D4ED8', '#8B5CF6', t);
-  } else {
-    const t = (score - 50) / 50;
-    return interpolate('#8B5CF6', '#EF4444', t);
-  }
+// ── Floor plan heatmap ────────────────────────────────────────────
+function scoreColor(s) {
+  // Cool blue → purple → hot red
+  if (s <= 50) return lerpColor('#1E3A8A','#7C3AED', s/50);
+  return lerpColor('#7C3AED','#DC2626', (s-50)/50);
 }
 
-function interpolate(c1, c2, t) {
-  const h = (s) => [parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
-  const a = h(c1), b = h(c2);
-  const r = Math.round(a[0]+(b[0]-a[0])*t);
-  const g = Math.round(a[1]+(b[1]-a[1])*t);
-  const bv= Math.round(a[2]+(b[2]-a[2])*t);
-  return `rgb(${r},${g},${bv})`;
+function lerpColor(a, b, t) {
+  const h = s => [parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
+  const [ar,ag,ab] = h(a), [br,bg,bb] = h(b);
+  return `rgba(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)},0.75)`;
 }
 
 function renderHeatmap(data) {
-  const zones   = data.zones  || [];
-  const conf    = data.data_confidence;
-  const grid    = document.getElementById('heatmapGrid');
-  const confEl  = document.getElementById('heatmapConfidence');
-  confEl.style.display = (!conf && zones.length) ? 'inline' : 'none';
+  const zones = data.zones || [];
+  const conf  = data.data_confidence;
+  document.getElementById('heatmapConf').style.display = (!conf && zones.length) ? 'block' : 'none';
 
-  if (!zones.length) {
-    grid.innerHTML = '<div class="heatmap-empty">No zone data yet.<br>Run the detection pipeline to populate.</div>';
-    return;
-  }
+  const zoneMap = {};
+  zones.forEach(z => {
+    zoneMap[z.zone_id] = (z.visit_score + z.dwell_score) / 2;
+  });
 
-  grid.innerHTML = zones.slice(0, 10).map(z => {
-    const vs = z.visit_score || 0;
-    const ds = z.dwell_score || 0;
-    const vc = scoreColor(vs);
-    const dc = scoreColor(ds);
-    const dwell_s = z.raw_avg_dwell_ms > 0 ? (z.raw_avg_dwell_ms/1000).toFixed(0)+'s' : '—';
-    return `
-      <div class="heatmap-row">
-        <span class="heatmap-label" title="${z.zone_id}">${z.zone_id.replace(/_/g,' ')}</span>
-        <div class="heatmap-bars">
-          <div class="heatmap-bar-track" title="Visit frequency ${vs.toFixed(0)}/100">
-            <div class="heatmap-bar-fill" style="width:${vs}%;background:${vc}"></div>
-          </div>
-          <div class="heatmap-bar-track" title="Avg dwell ${dwell_s}">
-            <div class="heatmap-bar-fill" style="width:${ds}%;background:${dc}"></div>
-          </div>
-        </div>
-        <span class="heatmap-score" title="Avg dwell">${dwell_s}</span>
-      </div>`;
-  }).join('');
+  // Update SVG zone colors
+  document.querySelectorAll('.zone-rect').forEach(el => {
+    const zid   = el.dataset.zone;
+    const score = zoneMap[zid] ?? 0;
+    el.style.fill = score > 0 ? scoreColor(score) : '#1A2F54';
+    if (score > 0) {
+      const tip = zones.find(z=>z.zone_id===zid);
+      el.setAttribute('title', tip ? `${zid}: visits=${tip.raw_visit_count}, dwell=${(tip.raw_avg_dwell_ms/1000).toFixed(0)}s` : zid);
+    }
+  });
 }
 
-// ── Anomalies ─────────────────────────────────────────────────────────────────
+// ── Anomalies ─────────────────────────────────────────────────────
 function renderAnomalies(data) {
-  const anomalies = data.anomalies || [];
-  const panel     = document.getElementById('anomalyPanel');
+  const list  = document.getElementById('anomalyList');
+  const badge = document.getElementById('anomalyCount');
+  const items = data.anomalies || [];
 
-  if (!anomalies.length) {
-    panel.innerHTML = '<div class="anomaly-no-data"><span class="anomaly-good-icon">✅</span>All systems normal</div>';
+  if (!items.length) {
+    list.innerHTML = '<div class="a-empty"><span class="a-empty-icon">✅</span>No anomalies detected</div>';
+    badge.textContent = 'All clear';
+    badge.style.background = 'var(--green-dim)';
+    badge.style.color = 'var(--green)';
     return;
   }
 
-  panel.innerHTML = `<div class="anomaly-list">${anomalies.map(a => {
+  const crit = items.filter(a=>a.severity==='CRITICAL').length;
+  badge.textContent = crit ? `${crit} CRITICAL` : `${items.length} active`;
+  badge.style.background = crit ? 'var(--red-dim)' : 'var(--amber-dim)';
+  badge.style.color = crit ? 'var(--red)' : 'var(--amber)';
+
+  list.innerHTML = items.map(a => {
+    const ts   = (a.detected_at||'').split('T')[1]?.slice(0,8) || '';
+    const zone = a.zone_id ? ` · ${a.zone_id.replace(/_/g,' ')}` : '';
     const cur  = a.current_value  != null ? ` · current: ${a.current_value}` : '';
     const base = a.baseline_value != null ? ` · baseline: ${a.baseline_value}` : '';
-    const zone = a.zone_id        ? ` · ${a.zone_id}` : '';
-    const conf = !a.data_confidence ? '<span class="no-data-confidence">Low data</span>' : '';
-    const ts   = a.detected_at ? a.detected_at.split('T')[1].slice(0,8) : '';
-    return `
-      <div class="anomaly-item ${a.severity}">
-        <span class="anomaly-badge ${a.severity}">${a.severity}</span>
-        <div class="anomaly-content">
-          <div class="anomaly-type">${a.anomaly_type.replace(/_/g,' ')}${zone} ${conf}</div>
-          <div class="anomaly-action">${a.suggested_action}</div>
-          <div class="anomaly-meta">${ts} UTC${cur}${base}</div>
-        </div>
-      </div>`;
-  }).join('')}</div>`;
+    const conf = !a.data_confidence ? '<span style="font-size:9px;color:var(--amber)"> [low data]</span>' : '';
+    return `<div class="anomaly ${a.severity}">
+      <span class="a-badge ${a.severity}">${a.severity}</span>
+      <div>
+        <div class="a-type">${a.anomaly_type.replace(/_/g,' ')}${zone}${conf}</div>
+        <div class="a-action">${a.suggested_action}</div>
+        <div class="a-meta">${ts} UTC${cur}${base}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-// ── Event feed ────────────────────────────────────────────────────────────────
-let feedEventIds = new Set();
-
+// ── Event feed ────────────────────────────────────────────────────
 function renderFeed(events) {
-  const list = document.getElementById('feedList');
+  const list  = document.getElementById('feedList');
+  const badge = document.getElementById('feedCount');
+
   if (!events.length) { list.innerHTML = '<div class="feed-empty">Waiting for events…</div>'; return; }
+  badge.textContent = events.length + ' events';
 
-  totalEvents = Math.max(totalEvents, events.length);
-  document.getElementById('feedCount').textContent = `${events.length} events`;
-
-  list.innerHTML = events.map((e, idx) => {
-    const ts   = e.timestamp ? e.timestamp.split('T')[1].slice(0,8) : '—';
-    const vis  = (e.visitor_id || '').slice(0, 12);
-    const zone = e.zone_id || (e.event_type === 'ENTRY' ? 'store entry' : '—');
-    const isNew = !feedEventIds.has(e.event_id);
-    if (e.event_id) feedEventIds.add(e.event_id);
-    return `
-      <div class="feed-item ${isNew && idx === 0 ? 'new' : ''}">
-        <span class="feed-ts">${ts}</span>
-        <span class="feed-visitor">${vis}</span>
-        <span class="feed-type-chip ${e.event_type}">${e.event_type}</span>
-        <span class="feed-zone">${zone}</span>
-      </div>`;
+  list.innerHTML = events.map((e,i) => {
+    const ts   = (e.timestamp||'').split('T')[1]?.slice(0,8) || '—';
+    const vis  = (e.visitor_id||'').slice(0,12);
+    const zone = e.zone_id ? e.zone_id.replace(/_/g,' ') : (e.event_type==='ENTRY'?'store entry':'—');
+    const isN  = !feedIds.has(e.event_id) && i===0;
+    if (e.event_id) feedIds.add(e.event_id);
+    return `<div class="feed-row${isN?' new':''}">
+      <span class="feed-ts">${ts}</span>
+      <span class="feed-vis">${vis}</span>
+      <span class="chip ${e.event_type}">${e.event_type}</span>
+      <span class="feed-zone">${zone}</span>
+    </div>`;
   }).join('');
 
-  // Keep set bounded
-  if (feedEventIds.size > 200) feedEventIds = new Set([...feedEventIds].slice(-100));
+  if (feedIds.size > 300) feedIds = new Set([...feedIds].slice(-150));
 }
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>

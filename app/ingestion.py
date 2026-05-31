@@ -24,22 +24,32 @@ def _session_id(store_id: str, visitor_id: str, date: str) -> str:
     return f"{store_id}|{visitor_id}|{date}"
 
 
+def _normalise_ts(ts: str) -> str:
+    """Convert ISO-8601 (with T and Z) to SQLite datetime format (space, no Z)."""
+    return ts.replace("T", " ").rstrip("Z")
+
+
 def _check_pos_correlation(
     conn: sqlite3.Connection,
     store_id: str,
     billing_ts: str,
     window_s: int = 300,
 ) -> bool:
-    """Return True if any POS transaction exists within window_s of billing_ts."""
+    """Return True if any POS transaction exists within window_s of billing_ts.
+
+    Normalises timestamps to SQLite's space-separated format so datetime()
+    arithmetic and string comparisons work correctly.
+    """
+    norm = _normalise_ts(billing_ts)
     row = conn.execute(
         """
         SELECT 1 FROM pos_transactions
         WHERE store_id = ?
-          AND timestamp >= ?
-          AND timestamp <= datetime(?, '+' || CAST(? AS TEXT) || ' seconds')
+          AND REPLACE(REPLACE(timestamp,'T',' '),'Z','') >= ?
+          AND REPLACE(REPLACE(timestamp,'T',' '),'Z','') <= datetime(?, '+' || CAST(? AS TEXT) || ' seconds')
         LIMIT 1
         """,
-        (store_id, billing_ts, billing_ts, window_s),
+        (store_id, norm, norm, window_s),
     ).fetchone()
     return row is not None
 
