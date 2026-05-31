@@ -21,47 +21,74 @@ The API runs in Docker and doesn't need the venv.
 
 ---
 
-## The Canonical Demo Workflow
-
-This is what the reviewer should follow. It uses **real CCTV footage** (the `Resources/CCTV Footage/` clips), runs YOLOv8 detection on it, ingests the events into the API, and shows real numbers on the dashboard.
+## The Canonical Workflow — One Command
 
 ```bash
-# 1. Start the API (Docker)
-docker compose up -d --build
-
-# 2. Run detection on the real CCTV clips
-#    Processes CAM 1, 2, 3, 5 (CAM 4 is the stockroom — automatically skipped)
-#    Outputs data/events_real.jsonl
-./pipeline/run.sh
-
-# 3. Ingest the real events into the API
-.venv/bin/python scripts/ingest_real.py
+.venv/bin/python run.py
 ```
 
-Then open the dashboard:
+This single command does the entire end-to-end run with interactive terminal feedback:
 
 ```
-http://localhost:8000
+⚡ RetailPulse — Store Intelligence System
+
+▶ Step 1/5  Checking environment        ✓ Docker, compose, CCTV clips
+▶ Step 2/5  Starting API (docker)       ✓ Image cached → API healthy in 5s
+▶ Step 3/5  Detection Pipeline          ✓ YOLOv8 on 4 cameras → 614 events
+▶ Step 4/5  Ingesting events            ✓ 614/614 events, 0 rejected
+▶ Step 5/5  Live Metrics                ✓ 50 visitors, 20% conversion
+
+╭──── Live Metrics ────╮  ╭──── Conversion Funnel ────╮  ╭──── Zone Heatmap ────╮
+│ Footage   2026-04-10 │  │ Entry         ████ 50     │  │ Lakme    ████ 18    │
+│ Visitors          50 │  │ Zone Visit    ███▒ 42 ↓16%│  │ Maybellin███▒ 13    │
+│ Conversion     20.0% │  │ Billing Queue █░░░ 10 ↓76%│  │ Billing  ██░░ 10    │
+│ Queue depth        0 │  │ Purchase      █░░░ 10     │  │ Maybel   ██░░ 10    │
+╰──────────────────────╯  ╰───────────────────────────╯  ╰─────────────────────╯
 ```
+
+After that, the dashboard auto-opens at `http://localhost:8000`.
+
+**Options:**
+```bash
+.venv/bin/python run.py --skip-pipeline    # if events_real.jsonl already exists
+.venv/bin/python run.py --no-open          # don't open browser
+.venv/bin/python run.py --replay           # Part E live demo (real-time replay)
+.venv/bin/python run.py --replay --speed 50 --reset   # 50× speed from empty DB
+```
+
+Want to run the steps manually? See "Manual Workflow" below.
 
 **What you'll see** (numbers from actual CCTV detection):
-- 49 unique visitors detected by YOLOv8
+- 50 unique visitors detected by YOLOv8
 - 20% conversion rate (computed from POS correlation, 5-min window)
-- 8 zones with real visit data on the heatmap (Maybelline/Swiss most active)
-- Live event feed showing the 25 most recent events
+- 8 zones with real visit data on the heatmap
+- Live event feed showing the most recent events
 - Auto-detected date: `2026-04-10` (from the footage timestamp)
+
+---
+
+## Manual Workflow (if you prefer step-by-step)
+
+```bash
+# 1. Start the API
+docker compose up -d --build
+
+# 2. Run detection on real CCTV (or skip if data/events_real.jsonl exists)
+./pipeline/run.sh
+
+# 3. Ingest events
+.venv/bin/python scripts/ingest_real.py
+```
 
 ---
 
 ## Part E Bonus — Live Real-Time Demo
 
-To demonstrate that the pipeline and API are genuinely connected (not just batch-processed), replay the real events in real time:
-
 ```bash
-.venv/bin/python scripts/replay_live.py --speed 10 --reset
+.venv/bin/python run.py --replay --speed 10 --reset
 ```
 
-This streams the 614 real events through the API in chronological order at 10× speed. The dashboard's SSE connection picks up each batch and updates live. With `--speed 50` the full clip set replays in ~9 seconds.
+This streams the 614 real events through the API in chronological order at 10× speed. The dashboard's SSE connection picks up each batch and updates the floor plan, KPIs, funnel, and event feed live. With `--speed 50` the full clip set replays in ~9 seconds.
 
 ---
 

@@ -2,476 +2,1035 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>RetailPulse — Store Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+/* ══════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════════════════════════ */
 :root {
-  --bg0:#03080F; --bg1:#080E1C; --bg2:#0D1629; --bg3:#132038;
-  --border:rgba(79,120,200,.1); --border2:rgba(79,120,200,.2);
-  --purple:#9B7DF8; --purple2:#7C5CE8; --purple-dim:rgba(155,125,248,.08);
-  --cyan:#22D9FF; --cyan-dim:rgba(34,217,255,.08);
-  --green:#22E88A; --green-dim:rgba(34,232,138,.1);
-  --amber:#FFB347; --amber-dim:rgba(255,179,71,.1);
-  --red:#FF4F6D; --red-dim:rgba(255,79,109,.1);
-  --blue:#4B9FFF; --blue-dim:rgba(75,159,255,.1);
-  --txt:#D8E8FF; --txt2:#7B9AC8; --txt3:#3A5580;
-  --radius:12px; --radius-sm:8px;
-  --shadow:0 8px 32px rgba(0,0,0,.6);
+  /* Surfaces */
+  --bg-0: #03060F;
+  --bg-1: #070C1C;
+  --bg-2: #0D1530;
+  --bg-3: #131D40;
+  --bg-4: #1A2654;
+
+  /* Borders */
+  --br-1: rgba(99, 130, 200, 0.08);
+  --br-2: rgba(99, 130, 200, 0.18);
+  --br-3: rgba(155, 125, 248, 0.25);
+
+  /* Brand */
+  --p-1: #9B7DF8;
+  --p-2: #C084FC;
+  --p-glow: rgba(155, 125, 248, 0.15);
+  --p-grad: linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%);
+
+  /* Accent */
+  --c-1: #22D9FF;
+  --c-glow: rgba(34, 217, 255, 0.12);
+  --pink: #FF6BD5;
+  --pink-glow: rgba(255, 107, 213, 0.12);
+
+  /* Semantic */
+  --ok:   #22E88A;
+  --ok-d: rgba(34, 232, 138, 0.12);
+  --warn:   #FFB347;
+  --warn-d: rgba(255, 179, 71, 0.12);
+  --bad:   #FF4F6D;
+  --bad-d: rgba(255, 79, 109, 0.12);
+  --info:   #4B9FFF;
+  --info-d: rgba(75, 159, 255, 0.12);
+
+  /* Text */
+  --t-1: #EEF3FF;
+  --t-2: #99B1D8;
+  --t-3: #5C7099;
+  --t-4: #3A4870;
+
+  /* Geometry */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  /* Shadows */
+  --sh-1: 0 1px 3px rgba(0,0,0,0.4);
+  --sh-2: 0 4px 16px rgba(0,0,0,0.4);
+  --sh-3: 0 12px 40px rgba(0,0,0,0.5);
+  --sh-glow: 0 0 32px var(--p-glow);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg0);color:var(--txt);font-family:'Inter',sans-serif;font-size:13px;overflow:hidden}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.mono{font-family:'JetBrains Mono',monospace}
 
-/* ── Shell ─────────────────────────────────────── */
-.shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:1fr;height:100vh}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+*::before, *::after { box-sizing: border-box; }
 
-/* ── Sidebar ────────────────────────────────────── */
-.sidebar{
-  background:var(--bg1);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;padding:20px 14px;gap:6px;
-  overflow-y:auto;
+html, body {
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--t-1);
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow: hidden;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
 }
-.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 18px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.brand-name{font-size:15px;font-weight:800;letter-spacing:-.5px}
-.brand-name span{color:var(--purple)}
 
-.store-wrap{position:relative;margin-bottom:4px}
-.store-select{
-  width:100%;appearance:none;background:var(--bg2);border:1px solid var(--border2);
-  color:var(--txt);font-family:inherit;font-size:12px;font-weight:500;
-  padding:9px 28px 9px 12px;border-radius:var(--radius-sm);cursor:pointer;outline:none;
-  transition:border-color .2s;
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--br-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--br-3); }
+
+.mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+/* ══════════════════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════════════════ */
+.shell { display: grid; grid-template-columns: 240px 1fr; height: 100vh; }
+
+/* Background gradient mesh */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(155,125,248,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(34,217,255,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(255,107,213,0.03) 0%, transparent 60%);
+  pointer-events: none;
 }
-.store-select:focus{border-color:var(--purple)}
-.store-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--txt2);pointer-events:none;font-size:10px}
 
-.nav-label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);padding:12px 6px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--txt2);cursor:pointer;transition:all .2s;font-weight:500}
-.nav-item:hover{background:var(--purple-dim);color:var(--txt)}
-.nav-item.active{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(155,125,248,.2)}
-.nav-icon{font-size:15px;width:20px;text-align:center}
-
-.sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
-.live-badge{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg2)}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative;flex-shrink:0}
-.live-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--green);opacity:0;animation:pulse 2s infinite}
-.live-dot.error{background:var(--red)}
-.live-dot.error::after{background:var(--red);animation:none}
-.live-dot.connecting{background:var(--amber);animation:none}
-@keyframes pulse{0%,100%{opacity:0;transform:scale(1)}50%{opacity:.35;transform:scale(2.3)}}
-.live-text{font-size:11px;font-weight:600;color:var(--txt2)}
-.live-time{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3)}
-
-/* ── Main ───────────────────────────────────────── */
-.main{display:flex;flex-direction:column;overflow:hidden}
-.topbar{
-  display:flex;align-items:center;gap:12px;padding:0 24px;height:56px;
-  background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0;
+/* ══════════════════════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════════════════════ */
+.sidebar {
+  background: rgba(7, 12, 28, 0.7);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--br-1);
+  padding: 18px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
 }
-.page-title{font-size:16px;font-weight:700;letter-spacing:-.4px}
-.page-sub{font-size:11px;color:var(--txt2);margin-left:4px}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.date-chip{font-size:11px;font-weight:500;color:var(--txt2);background:var(--bg2);padding:5px 10px;border-radius:99px;border:1px solid var(--border)}
-.api-docs-btn{font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-dim);padding:5px 12px;border-radius:99px;border:1px solid rgba(155,125,248,.2);cursor:pointer;text-decoration:none;transition:all .2s}
-.api-docs-btn:hover{background:rgba(155,125,248,.15)}
 
-.content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
-
-/* ── KPI cards ──────────────────────────────────── */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;flex-shrink:0}
-.kpi{
-  background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px 20px;position:relative;overflow:hidden;transition:all .25s;
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 4px 18px;
+  border-bottom: 1px solid var(--br-1);
+  margin-bottom: 8px;
 }
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--kpi-color),transparent);opacity:.7}
-.kpi:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow)}
-.kpi-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
-.kpi-icon{width:32px;height:32px;border-radius:9px;background:var(--kpi-dim);display:flex;align-items:center;justify-content:center;font-size:15px}
-.kpi-trend{font-size:10px;font-weight:700;padding:3px 7px;border-radius:99px;letter-spacing:.3px}
-.kpi-trend.up{background:var(--green-dim);color:var(--green)}
-.kpi-trend.down{background:var(--red-dim);color:var(--red)}
-.kpi-trend.flat{background:var(--blue-dim);color:var(--blue)}
-.kpi-val{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:4px;font-family:'JetBrains Mono',monospace}
-.kpi-label{font-size:11px;font-weight:600;color:var(--txt2);letter-spacing:.2px;text-transform:uppercase;margin-bottom:10px}
-.kpi-spark{height:36px}
+.brand-mark {
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: var(--p-grad);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  position: relative;
+  box-shadow: 0 6px 20px rgba(139,92,246,0.35);
+}
+.brand-mark::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent);
+}
+.brand-text { font-size: 16px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.1; }
+.brand-text span { background: var(--p-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-sub { font-size: 10.5px; color: var(--t-3); font-weight: 500; margin-top: 2px; }
 
-.kpi-visitors {--kpi-color:var(--purple);--kpi-dim:var(--purple-dim)}
-.kpi-conv     {--kpi-color:var(--green);--kpi-dim:var(--green-dim)}
-.kpi-queue    {--kpi-color:var(--amber);--kpi-dim:var(--amber-dim)}
-.kpi-abandon  {--kpi-color:var(--red);--kpi-dim:var(--red-dim)}
+/* Store selector */
+.store-row { margin-bottom: 6px; }
+.store-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--t-4);
+  padding: 14px 6px 6px;
+}
+.store-wrap { position: relative; }
+.store-select {
+  width: 100%;
+  appearance: none;
+  background: var(--bg-2);
+  border: 1px solid var(--br-1);
+  color: var(--t-1);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 30px 9px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+.store-select:hover { border-color: var(--br-2); background: var(--bg-3); }
+.store-select:focus { border-color: var(--br-3); }
+.store-caret {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--t-3); pointer-events: none;
+  font-size: 9px;
+}
 
-/* ── Middle row ─────────────────────────────────── */
-.mid-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+/* Nav */
+.nav-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--t-4);
+  padding: 14px 6px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  color: var(--t-2);
+  cursor: pointer;
+  transition: all 0.18s;
+  font-weight: 500;
+  font-size: 12.5px;
+  position: relative;
+  text-decoration: none;
+}
+.nav-item:hover {
+  background: rgba(155,125,248,0.06);
+  color: var(--t-1);
+  transform: translateX(2px);
+}
+.nav-item.active {
+  background: var(--p-glow);
+  color: var(--p-1);
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 3px; background: var(--p-grad); border-radius: 0 2px 2px 0;
+}
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; opacity: 0.85; }
 
-/* ── Card base ──────────────────────────────────── */
-.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
-.card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.card-title{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--txt2)}
-.card-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--purple-dim);color:var(--purple);margin-left:auto}
+/* Date picker */
+.date-input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--br-1);
+  color: var(--t-1);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: all 0.2s;
+  color-scheme: dark;
+}
+.date-input:focus { border-color: var(--br-3); }
 
-/* ── Floor plan ─────────────────────────────────── */
-.floor-wrap{position:relative}
-.floor-svg{width:100%;border-radius:9px;overflow:visible}
-.zone-rect{cursor:pointer;transition:fill .6s ease,opacity .3s}
-.zone-rect:hover{opacity:.85}
-.zone-label{font-family:'Inter',sans-serif;font-size:7.5px;font-weight:600;fill:rgba(216,232,255,.6);pointer-events:none;text-anchor:middle}
-.zone-sublabel{font-family:'Inter',sans-serif;font-size:6px;fill:rgba(216,232,255,.35);pointer-events:none;text-anchor:middle}
-.wall{fill:none;stroke:rgba(79,120,200,.25);stroke-width:1.5}
-.entry-door{fill:rgba(34,232,138,.15);stroke:var(--green);stroke-width:1}
-.entry-door-label{font-family:'Inter',sans-serif;font-size:7px;fill:var(--green);font-weight:700;text-anchor:middle}
-.plan-legend{display:flex;align-items:center;gap:12px;margin-top:10px}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt2)}
-.legend-dot{width:8px;height:8px;border-radius:2px}
+/* Sidebar footer */
+.sb-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--br-1); }
+.live-card {
+  background: var(--bg-2);
+  border: 1px solid var(--br-1);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.3s;
+}
+.live-card.live { border-color: rgba(34,232,138,0.2); }
+.live-card.error { border-color: rgba(255,79,109,0.2); }
 
-/* ── Funnel ─────────────────────────────────────── */
-.funnel-wrap{display:flex;flex-direction:column;gap:10px}
-.funnel-stage{display:flex;flex-direction:column;gap:5px}
-.funnel-hdr{display:flex;justify-content:space-between;align-items:center}
-.funnel-name{font-size:11px;font-weight:600;color:var(--txt2)}
-.funnel-num{font-size:15px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.funnel-bar-bg{height:10px;background:var(--bg2);border-radius:99px;overflow:hidden}
-.funnel-bar-fg{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.funnel-drop{font-size:10px;color:var(--red);font-weight:600;margin-top:-2px}
-.funnel-connector{display:flex;align-items:center;gap:6px;padding:0 4px}
-.funnel-arrow{color:var(--txt3);font-size:10px}
-.funnel-drop-pct{font-size:10px;color:var(--red-dim);background:var(--red-dim);color:var(--red);padding:2px 6px;border-radius:4px;font-weight:700}
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); position: relative; flex-shrink: 0; }
+.live-dot::after {
+  content: ''; position: absolute; inset: -4px;
+  border-radius: 50%; background: var(--ok); opacity: 0;
+  animation: livePulse 2s ease-in-out infinite;
+}
+.live-dot.error { background: var(--bad); }
+.live-dot.error::after { background: var(--bad); animation: none; }
+.live-dot.connecting { background: var(--warn); animation: connectingPulse 1s ease-in-out infinite; }
+.live-dot.connecting::after { display: none; }
+@keyframes livePulse { 0%,100%{opacity:0;transform:scale(1)} 50%{opacity:0.4;transform:scale(2.5)} }
+@keyframes connectingPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
 
-/* ── Bottom row ─────────────────────────────────── */
-.bot-row{display:grid;grid-template-columns:1fr 1.5fr;gap:14px}
+.live-text { font-size: 11.5px; font-weight: 600; color: var(--t-2); }
+.live-time { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--t-3); font-weight: 500; }
 
-/* ── Anomalies ──────────────────────────────────── */
-.anomaly-list{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
-.anomaly{display:flex;gap:12px;padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);transition:all .3s}
-.anomaly.CRITICAL{border-color:rgba(255,79,109,.3);background:rgba(255,79,109,.04)}
-.anomaly.WARN{border-color:rgba(255,179,71,.3);background:rgba(255,179,71,.04)}
-.anomaly.INFO{border-color:rgba(75,159,255,.25);background:rgba(75,159,255,.03)}
-.a-badge{font-size:9px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:4px;flex-shrink:0;margin-top:1px;height:fit-content}
-.a-badge.CRITICAL{background:rgba(255,79,109,.15);color:#FF8FA5}
-.a-badge.WARN{background:rgba(255,179,71,.15);color:#FFD080}
-.a-badge.INFO{background:rgba(75,159,255,.15);color:#90C0FF}
-.a-type{font-size:11px;font-weight:700;margin-bottom:2px}
-.a-action{font-size:10px;color:var(--txt2);line-height:1.5}
-.a-meta{font-size:10px;color:var(--txt3);margin-top:3px;font-family:'JetBrains Mono',monospace}
-.a-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;color:var(--txt3);gap:8px}
-.a-empty-icon{font-size:28px}
+.system-meta { margin-top: 12px; padding: 0 4px; font-size: 10px; color: var(--t-4); line-height: 1.7; }
+.system-meta b { color: var(--t-3); font-weight: 600; }
 
-/* ── Event feed ─────────────────────────────────── */
-.feed{overflow:hidden}
-.feed-inner{display:flex;flex-direction:column;max-height:240px;overflow-y:auto;gap:0}
-.feed-row{display:grid;grid-template-columns:90px 100px 1fr 80px;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;transition:background .2s;cursor:default}
-.feed-row:hover{background:var(--bg2)}
-.feed-row.new{animation:feedSlide .35s ease-out}
-@keyframes feedSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-.feed-ts{color:var(--txt3);font-family:'JetBrains Mono',monospace;font-size:10px}
-.feed-vis{color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.2px}
-.chip.ENTRY{background:rgba(155,125,248,.15);color:var(--purple)}
-.chip.EXIT{background:rgba(123,154,200,.1);color:#8AAAD8}
-.chip.ZONE_ENTER{background:rgba(34,232,138,.1);color:var(--green)}
-.chip.ZONE_EXIT{background:rgba(34,232,138,.06);color:#6EDDA8}
-.chip.ZONE_DWELL{background:rgba(34,217,255,.1);color:var(--cyan)}
-.chip.BILLING_QUEUE_JOIN{background:rgba(255,179,71,.12);color:var(--amber)}
-.chip.BILLING_QUEUE_ABANDON{background:rgba(255,79,109,.1);color:var(--red)}
-.chip.REENTRY{background:rgba(155,125,248,.12);color:#BFB0F8}
-.feed-zone{color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.feed-empty{padding:40px;text-align:center;color:var(--txt3);font-size:12px}
+/* ══════════════════════════════════════════════════════════════════
+   MAIN
+══════════════════════════════════════════════════════════════════ */
+.main { display: flex; flex-direction: column; overflow: hidden; }
 
-/* ── Empty / loading states ─────────────────────── */
-.shimmer{background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);background-size:200% 100%;animation:sh 1.6s infinite;border-radius:4px}
-@keyframes sh{to{background-position:-200% 0}}
-.conf-warn{font-size:10px;color:var(--amber);background:var(--amber-dim);padding:2px 7px;border-radius:4px;margin-left:auto}
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 24px;
+  height: 60px;
+  background: rgba(7, 12, 28, 0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--br-1);
+  flex-shrink: 0;
+}
+.tb-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.tb-sub { font-size: 12px; color: var(--t-3); font-weight: 500; margin-left: 4px; }
+.tb-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 99px;
+  background: var(--bg-2);
+  border: 1px solid var(--br-1);
+  color: var(--t-2);
+  transition: all 0.2s;
+}
+.chip-purple { background: var(--p-glow); border-color: rgba(155,125,248,0.2); color: var(--p-1); }
+.chip-purple:hover { background: rgba(155,125,248,0.18); }
+.chip a { color: inherit; text-decoration: none; }
+.chip-eventcount {
+  background: var(--c-glow);
+  color: var(--c-1);
+  border-color: rgba(34,217,255,0.2);
+}
+.event-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--c-1);
+  animation: eventDot 1.6s ease-in-out infinite;
+}
+@keyframes eventDot { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+/* Content area */
+.content {
+  flex: 1; overflow-y: auto;
+  padding: 22px 24px 28px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   HERO METRIC
+══════════════════════════════════════════════════════════════════ */
+.hero {
+  background: linear-gradient(135deg, rgba(155,125,248,0.08) 0%, rgba(34,217,255,0.04) 100%);
+  border: 1px solid var(--br-3);
+  border-radius: var(--r-xl);
+  padding: 24px 28px;
+  display: grid; grid-template-columns: 1.6fr 1fr;
+  gap: 32px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: -50%; right: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(circle, rgba(155,125,248,0.18) 0%, transparent 50%);
+  pointer-events: none;
+}
+.hero-left { position: relative; }
+.hero-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--p-1);
+  margin-bottom: 8px;
+}
+.hero-metric {
+  font-size: 64px; font-weight: 800;
+  letter-spacing: -3px; line-height: 1;
+  font-family: 'Inter', sans-serif;
+  background: var(--p-grad);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+.hero-sub { font-size: 13px; color: var(--t-2); font-weight: 500; }
+.hero-sub b { color: var(--t-1); font-weight: 700; }
+
+.hero-right { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+.hero-stat { display: flex; align-items: center; gap: 14px; }
+.hero-stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.hero-stat-data { flex: 1; }
+.hero-stat-val { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.5px; line-height: 1.1; }
+.hero-stat-lbl { font-size: 11px; color: var(--t-3); font-weight: 500; margin-top: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   KPI CARDS
+══════════════════════════════════════════════════════════════════ */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+
+.kpi {
+  background: var(--bg-1);
+  border: 1px solid var(--br-1);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.kpi::before {
+  content: ''; position: absolute; top: 0; left: 12px; right: 12px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--kpi-c, var(--p-1)), transparent);
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.kpi:hover { transform: translateY(-2px); border-color: var(--br-2); box-shadow: var(--sh-3); }
+.kpi:hover::before { opacity: 1; }
+
+.kpi-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.kpi-icon {
+  width: 34px; height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--kpi-d);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.kpi-trend {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 99px;
+  letter-spacing: 0.3px;
+}
+.kpi-trend.up { background: var(--ok-d); color: var(--ok); }
+.kpi-trend.down { background: var(--bad-d); color: var(--bad); }
+.kpi-trend.flat { background: rgba(99, 130, 200, 0.1); color: var(--t-3); }
+
+.kpi-val {
+  font-size: 30px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -1px; line-height: 1;
+  margin-bottom: 5px;
+}
+.kpi-lbl {
+  font-size: 11px; font-weight: 600;
+  color: var(--t-3);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.kpi-spark { height: 30px; opacity: 0.9; }
+
+.kpi-visitors { --kpi-c: var(--p-1); --kpi-d: var(--p-glow); }
+.kpi-conv     { --kpi-c: var(--ok);  --kpi-d: var(--ok-d);   }
+.kpi-queue    { --kpi-c: var(--warn);--kpi-d: var(--warn-d); }
+.kpi-abandon  { --kpi-c: var(--bad); --kpi-d: var(--bad-d);  }
+
+/* ══════════════════════════════════════════════════════════════════
+   CARD BASE
+══════════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--br-1);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  position: relative;
+}
+.card-hdr {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 18px;
+}
+.card-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--t-2);
+}
+.card-icon { font-size: 14px; opacity: 0.8; }
+.card-badge {
+  margin-left: auto;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--bg-3);
+  color: var(--t-3);
+  letter-spacing: 0.3px;
+}
+.card-badge.ok { background: var(--ok-d); color: var(--ok); }
+.card-badge.warn { background: var(--warn-d); color: var(--warn); }
+.card-badge.bad { background: var(--bad-d); color: var(--bad); }
+
+/* ══════════════════════════════════════════════════════════════════
+   ROWS
+══════════════════════════════════════════════════════════════════ */
+.row-main { display: grid; grid-template-columns: 1.55fr 1fr; gap: 14px; }
+.row-bot  { display: grid; grid-template-columns: 1fr 1.45fr; gap: 14px; }
+@media (max-width: 980px) { .row-main, .row-bot { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════════════════════════════
+   FLOOR PLAN
+══════════════════════════════════════════════════════════════════ */
+.floor-svg {
+  width: 100%;
+  border-radius: var(--r-md);
+}
+.zone-rect {
+  cursor: pointer;
+  transition: fill 0.6s ease, opacity 0.3s, stroke-width 0.2s;
+  stroke: rgba(99,130,200,0.15);
+  stroke-width: 1;
+}
+.zone-rect:hover { stroke: var(--p-1); stroke-width: 1.5; opacity: 0.9; }
+.zone-rect.active-pulse {
+  animation: zonePulse 1s ease-out;
+}
+@keyframes zonePulse {
+  0%   { stroke: var(--c-1); stroke-width: 3; filter: brightness(1.4); }
+  100% { stroke: rgba(99,130,200,0.15); stroke-width: 1; filter: brightness(1); }
+}
+.zone-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 8px; font-weight: 700;
+  fill: rgba(238,243,255,0.85);
+  pointer-events: none; text-anchor: middle;
+}
+.zone-sublbl {
+  font-family: 'Inter', sans-serif;
+  font-size: 6.5px; font-weight: 500;
+  fill: rgba(238,243,255,0.5);
+  pointer-events: none; text-anchor: middle;
+}
+.wall { fill: none; stroke: rgba(155,125,248,0.2); stroke-width: 1.5; }
+.entry-arrow { fill: var(--ok); }
+.entry-line { stroke: var(--ok); stroke-width: 2; stroke-dasharray: 4,3; opacity: 0.7; }
+.legend { display: flex; align-items: center; gap: 14px; margin-top: 14px; font-size: 11px; color: var(--t-3); }
+.legend-grad {
+  width: 90px; height: 8px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #1E3A8A, #7C3AED, #DC2626);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FUNNEL
+══════════════════════════════════════════════════════════════════ */
+.funnel { display: flex; flex-direction: column; gap: 14px; }
+.funnel-stage { position: relative; }
+.funnel-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.funnel-name { font-size: 12px; font-weight: 600; color: var(--t-2); }
+.funnel-num {
+  font-size: 16px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.5px;
+}
+.funnel-bar {
+  height: 10px; background: var(--bg-3);
+  border-radius: 99px; overflow: hidden;
+  position: relative;
+}
+.funnel-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative; overflow: hidden;
+}
+.funnel-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+.funnel-drop {
+  font-size: 10.5px; color: var(--bad);
+  font-weight: 600; margin-top: 5px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ANOMALIES
+══════════════════════════════════════════════════════════════════ */
+.anomalies { display: flex; flex-direction: column; gap: 10px; max-height: 270px; overflow-y: auto; }
+.anomaly {
+  display: flex; gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--br-1);
+  background: var(--bg-2);
+  transition: all 0.3s;
+}
+.anomaly.CRITICAL { border-color: rgba(255,79,109,0.3); background: rgba(255,79,109,0.04); }
+.anomaly.WARN { border-color: rgba(255,179,71,0.3); background: rgba(255,179,71,0.04); }
+.anomaly.INFO { border-color: rgba(75,159,255,0.2); background: rgba(75,159,255,0.03); }
+.a-tag {
+  font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  height: fit-content;
+  margin-top: 1px;
+}
+.a-tag.CRITICAL { background: rgba(255,79,109,0.18); color: #FF8FA5; }
+.a-tag.WARN { background: rgba(255,179,71,0.18); color: #FFCC80; }
+.a-tag.INFO { background: rgba(75,159,255,0.18); color: #9BC4FF; }
+.a-content { flex: 1; min-width: 0; }
+.a-type { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.a-action { font-size: 11px; color: var(--t-2); line-height: 1.55; }
+.a-meta { font-size: 10px; color: var(--t-4); margin-top: 5px; font-family: 'JetBrains Mono', monospace; }
+
+.empty-good {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 36px 24px;
+  gap: 12px;
+  color: var(--t-3);
+}
+.empty-good-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--ok-d);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+}
+.empty-good-text { font-size: 12px; text-align: center; font-weight: 500; }
+.empty-good-text b { color: var(--ok); font-weight: 700; }
+
+/* ══════════════════════════════════════════════════════════════════
+   LIVE EVENT FEED
+══════════════════════════════════════════════════════════════════ */
+.feed { display: flex; flex-direction: column; max-height: 270px; overflow-y: auto; }
+.feed-row {
+  display: grid;
+  grid-template-columns: 76px 100px 1fr 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--br-1);
+  font-size: 11.5px;
+  transition: background 0.2s;
+}
+.feed-row:last-child { border-bottom: none; }
+.feed-row:hover { background: var(--bg-2); }
+.feed-row.new {
+  animation: feedSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes feedSlide {
+  from { opacity: 0; transform: translateY(-8px); background: var(--p-glow); }
+  to { opacity: 1; transform: none; background: transparent; }
+}
+.f-ts { color: var(--t-3); font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+.f-vid { color: var(--p-1); font-family: 'JetBrains Mono', monospace; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-chip {
+  display: inline-block;
+  padding: 2.5px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.event-chip.ENTRY              { background: rgba(155,125,248,0.18); color: #B3A1FA; }
+.event-chip.EXIT               { background: rgba(99,130,200,0.12);  color: #8FA8D0; }
+.event-chip.ZONE_ENTER         { background: rgba(34,232,138,0.14);  color: #80F0B5; }
+.event-chip.ZONE_EXIT          { background: rgba(34,232,138,0.07);  color: #6EDEA3; }
+.event-chip.ZONE_DWELL         { background: rgba(34,217,255,0.12);  color: #80E8FF; }
+.event-chip.BILLING_QUEUE_JOIN { background: rgba(255,179,71,0.15);  color: #FFD080; }
+.event-chip.BILLING_QUEUE_ABANDON { background: rgba(255,79,109,0.12); color: #FFA5B7; }
+.event-chip.REENTRY            { background: rgba(192,132,252,0.16); color: #DDC2FE; }
+.f-zone { color: var(--t-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+
+.feed-empty {
+  padding: 50px 24px;
+  text-align: center;
+  color: var(--t-3);
+  font-size: 12.5px;
+}
+.feed-empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
+
+/* ══════════════════════════════════════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════════════════════════════════════ */
+.empty-state {
+  background: var(--bg-1);
+  border: 1px solid var(--br-1);
+  border-radius: var(--r-xl);
+  padding: 64px 32px;
+  text-align: center;
+}
+.empty-state-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: var(--p-glow);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin-bottom: 18px;
+}
+.empty-state-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.empty-state-text { font-size: 13px; color: var(--t-3); line-height: 1.7; margin-bottom: 20px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.empty-state-code {
+  display: inline-block;
+  background: var(--bg-2);
+  border: 1px solid var(--br-1);
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--c-1);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SHIMMER LOADING
+══════════════════════════════════════════════════════════════════ */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-2) 25%,
+    var(--bg-3) 50%,
+    var(--bg-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerLoad 1.6s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+@keyframes shimmerLoad { to { background-position: -200% 0; } }
+
+/* ══════════════════════════════════════════════════════════════════
+   ENTRY ANIMATIONS
+══════════════════════════════════════════════════════════════════ */
+.fade-up { animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+.fade-up:nth-child(1) { animation-delay: 0ms; }
+.fade-up:nth-child(2) { animation-delay: 60ms; }
+.fade-up:nth-child(3) { animation-delay: 120ms; }
+.fade-up:nth-child(4) { animation-delay: 180ms; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
+
 <body>
 <div class="shell">
 
-<!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
-<aside class="sidebar">
-  <div class="brand">
-    <div class="brand-icon">⚡</div>
-    <div>
-      <div class="brand-name">Retail<span>Pulse</span></div>
-      <div style="font-size:10px;color:var(--txt3);margin-top:1px">Store Intelligence</div>
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">⚡</div>
+      <div>
+        <div class="brand-text">Retail<span>Pulse</span></div>
+        <div class="brand-sub">Store Intelligence</div>
+      </div>
+    </div>
+
+    <div class="store-row">
+      <div class="store-label">Active Store</div>
+      <div class="store-wrap">
+        <select id="storeSelect" class="store-select" onchange="changeStore(this.value)">
+          <option>Loading…</option>
+        </select>
+        <span class="store-caret">▾</span>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Navigation</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span>Overview</div>
+    <a class="nav-item" href="/api/docs" target="_blank"><span class="nav-icon">🔌</span>API Reference</a>
+    <a class="nav-item" href="/health" target="_blank"><span class="nav-icon">❤️</span>Health</a>
+
+    <div class="nav-section-label">Time Window</div>
+    <input type="date" id="datePicker" class="date-input" onchange="changeDate(this.value)"/>
+
+    <div class="sb-footer">
+      <div class="live-card" id="liveCard">
+        <div class="live-dot connecting" id="liveDot"></div>
+        <span class="live-text" id="liveStatus">Connecting…</span>
+        <span class="live-time" id="liveTime">--:--</span>
+      </div>
+      <div class="system-meta">
+        <b>YOLOv8 + ByteTrack</b><br>
+        4 cameras · Real CCTV footage<br>
+        SQLite WAL · FastAPI · SSE
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <div class="main">
+
+    <div class="topbar">
+      <div>
+        <span class="tb-title" id="tbTitle">Store Overview</span>
+        <span class="tb-sub" id="tbSub">— Live</span>
+      </div>
+      <div class="tb-right">
+        <div class="chip chip-eventcount"><span class="event-pulse"></span><span id="eventTotal">0</span> events</div>
+        <div class="chip" id="dateChip">📅 —</div>
+        <div class="chip chip-purple"><a href="/api/docs" target="_blank">API ↗</a></div>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+
+      <!-- ─── HERO ─── -->
+      <section class="hero fade-up" id="hero">
+        <div class="hero-left">
+          <div class="hero-label">North Star Metric</div>
+          <div class="hero-metric" id="heroMetric">—</div>
+          <div class="hero-sub" id="heroSub">Loading real-time data…</div>
+        </div>
+        <div class="hero-right">
+          <div class="hero-stat">
+            <div class="hero-stat-icon" style="background: var(--p-glow); color: var(--p-1)">👥</div>
+            <div class="hero-stat-data">
+              <div class="hero-stat-val" id="heroVisitors">—</div>
+              <div class="hero-stat-lbl">unique visitors today</div>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-icon" style="background: var(--ok-d); color: var(--ok)">💰</div>
+            <div class="hero-stat-data">
+              <div class="hero-stat-val" id="heroPurchases">—</div>
+              <div class="hero-stat-lbl">completed purchases</div>
+            </div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-icon" style="background: var(--c-glow); color: var(--c-1)">📦</div>
+            <div class="hero-stat-data">
+              <div class="hero-stat-val" id="heroZones">—</div>
+              <div class="hero-stat-lbl">active product zones</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── KPI ROW ─── -->
+      <section class="kpis">
+        <div class="kpi kpi-visitors fade-up">
+          <div class="kpi-head">
+            <div class="kpi-icon">👥</div>
+            <div class="kpi-trend flat" id="visitorsTrend">—</div>
+          </div>
+          <div class="kpi-val" id="kpiVisitors">—</div>
+          <div class="kpi-lbl">Unique Visitors</div>
+          <canvas class="kpi-spark" id="sparkVisitors"></canvas>
+        </div>
+        <div class="kpi kpi-conv fade-up">
+          <div class="kpi-head">
+            <div class="kpi-icon">🎯</div>
+            <div class="kpi-trend flat" id="convTrend">—</div>
+          </div>
+          <div class="kpi-val" id="kpiConv">—</div>
+          <div class="kpi-lbl">Conversion Rate</div>
+          <canvas class="kpi-spark" id="sparkConv"></canvas>
+        </div>
+        <div class="kpi kpi-queue fade-up">
+          <div class="kpi-head">
+            <div class="kpi-icon">⏳</div>
+            <div class="kpi-trend flat" id="queueTrend">—</div>
+          </div>
+          <div class="kpi-val" id="kpiQueue">—</div>
+          <div class="kpi-lbl">Queue Depth</div>
+          <canvas class="kpi-spark" id="sparkQueue"></canvas>
+        </div>
+        <div class="kpi kpi-abandon fade-up">
+          <div class="kpi-head">
+            <div class="kpi-icon">🚪</div>
+            <div class="kpi-trend flat" id="abandonTrend">—</div>
+          </div>
+          <div class="kpi-val" id="kpiAbandon">—</div>
+          <div class="kpi-lbl">Abandonment</div>
+          <canvas class="kpi-spark" id="sparkAbandon"></canvas>
+        </div>
+      </section>
+
+      <!-- ─── FLOOR PLAN + FUNNEL ─── -->
+      <section class="row-main">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-icon">🏪</span>
+            <span class="card-title">Store Floor Plan</span>
+            <span class="card-badge" id="floorBadge">Live Heatmap</span>
+          </div>
+          <div>
+            <svg class="floor-svg" viewBox="0 0 840 380" xmlns="http://www.w3.org/2000/svg">
+              <!-- Store boundary -->
+              <rect x="2" y="2" width="836" height="376" rx="8" class="wall"/>
+
+              <!-- Entry door (left side) -->
+              <rect x="1" y="140" width="32" height="100" rx="3" fill="rgba(34,232,138,0.12)" stroke="var(--ok)" stroke-width="1"/>
+              <text x="17" y="195" font-family="Inter" font-size="8" font-weight="700" fill="var(--ok)" text-anchor="middle">ENTRY</text>
+
+              <!-- Entry threshold marker -->
+              <line x1="34" y1="140" x2="34" y2="240" class="entry-line"/>
+              <polygon points="37,180 44,185 37,190" class="entry-arrow"/>
+
+              <!-- Top shelf bays -->
+              <rect class="zone-rect" data-zone="TFS_GOODVIBES_SHELF"      x="40"  y="8"  width="140" height="64" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="110" y="33">The Face Shop</text>
+              <text class="zone-sublbl" x="110" y="46">Good Vibes</text>
+
+              <rect class="zone-rect" data-zone="DERMA_MINIMALIST_SHELF"   x="185" y="8"  width="150" height="64" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="260" y="33">DermDoc</text>
+              <text class="zone-sublbl" x="260" y="46">Minimalist</text>
+
+              <rect class="zone-rect" data-zone="MAYBEL_SHELF"             x="340" y="8"  width="150" height="64" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="415" y="33">Maybel</text>
+              <text class="zone-sublbl" x="415" y="46">Aqualogica · Pilgrim</text>
+
+              <rect x="495" y="8" width="100" height="64" rx="5" fill="#0D1530" opacity="0.5"/>
+              <text class="zone-sublbl" x="545" y="42">D&amp;K</text>
+
+              <!-- Centre area -->
+              <rect class="zone-rect" data-zone="FOH"                      x="40"  y="80" width="80"  height="160" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="80" y="158">Fragrance</text>
+              <text class="zone-sublbl" x="80" y="171">&amp; Nail Unit</text>
+
+              <rect class="zone-rect" data-zone="MAKEUP_DISPLAY_CENTRE"    x="125" y="80" width="200" height="100" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="225" y="120">Makeup Units</text>
+              <text class="zone-sublbl" x="225" y="133">F.O.H · Demo Area</text>
+
+              <rect x="125" y="185" width="200" height="55" rx="5" fill="#0D1530" opacity="0.4"/>
+              <text class="zone-sublbl" x="225" y="215">Open Floor</text>
+
+              <rect class="zone-rect" data-zone="CONSULTATION_AREA"        x="330" y="80" width="155" height="160" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="407" y="155">Beauty</text>
+              <text class="zone-label" x="407" y="168">Consultation</text>
+
+              <rect x="490" y="80" width="105" height="160" rx="5" fill="#0D1530" opacity="0.4"/>
+              <text class="zone-sublbl" x="542" y="155">Display</text>
+              <text class="zone-sublbl" x="542" y="168">Area</text>
+
+              <!-- Bottom shelf bays -->
+              <rect class="zone-rect" data-zone="LAKME_FACESCANADA_SHELF"  x="40"  y="248" width="175" height="68" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="127" y="278">Lakme</text>
+              <text class="zone-sublbl" x="127" y="290">FacesCanada · Maybelline</text>
+
+              <rect class="zone-rect" data-zone="MAYBELLINE_SWISS_SHELF"   x="220" y="248" width="175" height="68" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="307" y="278">Swiss Beauty</text>
+              <text class="zone-sublbl" x="307" y="290">Mars+Nybae · Alps</text>
+
+              <rect x="400" y="248" width="195" height="68" rx="5" fill="#0D1530" opacity="0.5"/>
+              <text class="zone-sublbl" x="497" y="282">L'oreal · Beauty Essentials</text>
+
+              <!-- Billing area (right) -->
+              <line x1="600" y1="20" x2="600" y2="360" stroke="rgba(155,125,248,0.2)" stroke-width="1"/>
+
+              <rect class="zone-rect" data-zone="BILLING_QUEUE"            x="612" y="20"  width="140" height="240" rx="5" fill="#131D40"/>
+              <text class="zone-label" x="682" y="125">Billing Queue</text>
+              <text class="zone-sublbl" x="682" y="140">Customer Side</text>
+
+              <rect class="zone-rect" data-zone="CASH_COUNTER"             x="612" y="265" width="140" height="95" rx="5" fill="#0D1530"/>
+              <text class="zone-label" x="682" y="300">Cash Counter</text>
+              <text class="zone-sublbl" x="682" y="315">Staff Zone ⭐</text>
+
+              <rect class="zone-rect" data-zone="ACCESSORIES_DISPLAY"      x="760" y="20"  width="74" height="340" rx="5" fill="#131D40"/>
+              <text class="zone-label" transform="rotate(-90, 797, 190)" x="797" y="190">Accessories</text>
+
+              <!-- Bottom-left backlit display -->
+              <rect x="40" y="324" width="78" height="48" rx="5" fill="#0D1530" opacity="0.5"/>
+              <text class="zone-sublbl" x="79" y="354">Backlit</text>
+
+              <text x="320" y="350" font-family="Inter" font-size="9" font-weight="600" fill="rgba(238,243,255,0.3)" text-anchor="middle">Brigade Road · Calibrated from real footage</text>
+            </svg>
+          </div>
+          <div class="legend">
+            <div class="legend-grad"></div>
+            <span style="font-size:10.5px">Cool</span>
+            <span style="font-size:10.5px;margin-left:auto">Hot</span>
+            <span style="font-size:10.5px;margin-left:14px;color:var(--t-4)">·</span>
+            <span style="font-size:10.5px;color:var(--t-4)">Click zones for details</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-icon">🔽</span>
+            <span class="card-title">Conversion Funnel</span>
+            <span class="card-badge" id="funnelDate">—</span>
+          </div>
+          <div class="funnel" id="funnel">
+            <div class="shimmer" style="height: 180px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── ANOMALIES + FEED ─── -->
+      <section class="row-bot">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-icon">🚨</span>
+            <span class="card-title">Active Anomalies</span>
+            <span class="card-badge ok" id="anomalyCount">All clear</span>
+          </div>
+          <div id="anomalyPanel">
+            <div class="empty-good">
+              <div class="empty-good-icon">✓</div>
+              <div class="empty-good-text"><b>All systems normal</b><br>No anomalies detected in the current window</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-icon">⚡</span>
+            <span class="card-title">Live Event Feed</span>
+            <span class="card-badge" id="feedBadge">0 events</span>
+          </div>
+          <div class="feed" id="feedList">
+            <div class="feed-empty">
+              <div class="feed-empty-icon">📡</div>
+              Waiting for events…
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
-
-  <div class="store-wrap">
-    <select id="storeSelect" class="store-select" onchange="changeStore(this.value)">
-      <option>Loading…</option>
-    </select>
-    <span class="store-arrow">▾</span>
-  </div>
-
-  <div class="nav-label">Navigation</div>
-  <div class="nav-item active"><span class="nav-icon">📊</span> Overview</div>
-  <div class="nav-item" onclick="window.open('/api/docs','_blank')"><span class="nav-icon">🔌</span> API Docs</div>
-  <div class="nav-item" onclick="window.open('/health','_blank')"><span class="nav-icon">❤️</span> Health</div>
-
-  <div class="nav-label">Date Range</div>
-  <div style="padding:0 6px">
-    <input type="date" id="datePicker" style="width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--txt);font-family:inherit;font-size:11px;padding:8px 10px;border-radius:var(--radius-sm);outline:none" onchange="changeDate(this.value)"/>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="live-badge">
-      <div class="live-dot connecting" id="liveDot"></div>
-      <span class="live-text" id="liveStatus">Connecting…</span>
-      <span class="live-time" id="liveTime">--:--</span>
-    </div>
-    <div style="margin-top:10px;padding:0 2px;font-size:10px;color:var(--txt3);line-height:1.6">
-      Powered by YOLOv8 + ByteTrack<br>
-      614 events · 4 cameras · Real footage
-    </div>
-  </div>
-</aside>
-
-<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
-<div class="main">
-  <div class="topbar">
-    <div>
-      <span class="page-title" id="pageTitle">Store Overview</span>
-      <span class="page-sub" id="pageStoreId">— STORE_BLR_002</span>
-    </div>
-    <div class="topbar-right">
-      <div class="date-chip" id="dateChip">📅 2026-04-10</div>
-      <a class="api-docs-btn" href="/api/docs" target="_blank">API Docs ↗</a>
-    </div>
-  </div>
-
-  <div class="content">
-
-    <!-- KPI Row -->
-    <div class="kpi-row">
-      <div class="kpi kpi-visitors">
-        <div class="kpi-header">
-          <div class="kpi-icon">👥</div>
-          <div class="kpi-trend flat" id="visitorsTrend">—</div>
-        </div>
-        <div class="kpi-val" id="kpiVisitors">—</div>
-        <div class="kpi-label">Unique Visitors</div>
-        <canvas class="kpi-spark" id="sparkVisitors"></canvas>
-      </div>
-      <div class="kpi kpi-conv">
-        <div class="kpi-header">
-          <div class="kpi-icon">🎯</div>
-          <div class="kpi-trend flat" id="convTrend">—</div>
-        </div>
-        <div class="kpi-val" id="kpiConv">—</div>
-        <div class="kpi-label">Conversion Rate</div>
-        <canvas class="kpi-spark" id="sparkConv"></canvas>
-      </div>
-      <div class="kpi kpi-queue">
-        <div class="kpi-header">
-          <div class="kpi-icon">⏳</div>
-          <div class="kpi-trend flat" id="queueTrend">—</div>
-        </div>
-        <div class="kpi-val" id="kpiQueue">—</div>
-        <div class="kpi-label">Queue Depth</div>
-        <canvas class="kpi-spark" id="sparkQueue"></canvas>
-      </div>
-      <div class="kpi kpi-abandon">
-        <div class="kpi-header">
-          <div class="kpi-icon">🚪</div>
-          <div class="kpi-trend flat" id="abandonTrend">—</div>
-        </div>
-        <div class="kpi-val" id="kpiAbandon">—</div>
-        <div class="kpi-label">Abandonment Rate</div>
-        <canvas class="kpi-spark" id="sparkAbandon"></canvas>
-      </div>
-    </div>
-
-    <!-- Middle row: floor plan + funnel -->
-    <div class="mid-row">
-
-      <!-- Store Floor Plan -->
-      <div class="card">
-        <div class="card-hdr">
-          <div class="card-title">🏪 Store Floor Plan — Live Heatmap</div>
-          <div class="conf-warn" id="heatmapConf" style="display:none">Low data</div>
-        </div>
-        <div class="floor-wrap">
-          <svg class="floor-svg" viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg">
-            <!-- Store boundary -->
-            <rect x="1" y="1" width="818" height="358" rx="8" fill="#0D1629" stroke="rgba(79,120,200,.3)" stroke-width="1.5"/>
-
-            <!-- Entry door (left) -->
-            <rect class="entry-door" x="1" y="130" width="30" height="100" rx="4"/>
-            <text class="entry-door-label" x="16" y="186">ENTRY</text>
-
-            <!-- Top shelf bays -->
-            <rect class="zone-rect" data-zone="TFS_GOODVIBES_SHELF"     x="35"  y="4"  width="130" height="65" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="100" y="30">The Face Shop</text>
-            <text class="zone-sublabel" x="100" y="42">Good Vibes</text>
-
-            <rect class="zone-rect" data-zone="DERMA_MINIMALIST_SHELF"  x="170" y="4"  width="140" height="65" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="240" y="30">DermDoc</text>
-            <text class="zone-sublabel" x="240" y="42">Minimalist</text>
-
-            <rect class="zone-rect" data-zone="MAYBEL_SHELF"            x="315" y="4"  width="140" height="65" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="385" y="30">Maybel</text>
-            <text class="zone-sublabel" x="385" y="42">Aqualogica</text>
-
-            <rect x="460" y="4" width="110" height="65" rx="4" fill="#111F3A" opacity=".6"/>
-            <text class="zone-sublabel" x="515" y="35">Other Brands</text>
-
-            <!-- Left mid section -->
-            <rect class="zone-rect" data-zone="FOH"                     x="35"  y="74"  width="80" height="155" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="75" y="150">F.O.H</text>
-
-            <!-- Center: Makeup display -->
-            <rect class="zone-rect" data-zone="MAKEUP_DISPLAY_CENTRE"   x="120" y="74"  width="180" height="80" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="210" y="108">Makeup Units</text>
-
-            <!-- Open floor -->
-            <rect x="120" y="159" width="270" height="70" rx="4" fill="#0D1629" opacity=".4"/>
-            <text class="zone-sublabel" x="255" y="198">Open Floor</text>
-
-            <!-- Consultation area -->
-            <rect class="zone-rect" data-zone="CONSULTATION_AREA"       x="305" y="74"  width="130" height="155" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="370" y="148">Consultation</text>
-
-            <!-- Bottom shelf bays -->
-            <rect class="zone-rect" data-zone="LAKME_FACESCANADA_SHELF" x="35"  y="234" width="165" height="65" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="118" y="261">Lakme</text>
-            <text class="zone-sublabel" x="118" y="273">FacesCanada</text>
-
-            <rect class="zone-rect" data-zone="MAYBELLINE_SWISS_SHELF"  x="205" y="234" width="165" height="65" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="288" y="261">Maybelline</text>
-            <text class="zone-sublabel" x="288" y="273">Swiss Beauty</text>
-
-            <rect x="375" y="234" width="90" height="65" rx="4" fill="#111F3A" opacity=".6"/>
-            <text class="zone-sublabel" x="420" y="266">Mars+Nybae</text>
-
-            <!-- Billing area (right) -->
-            <rect x="580" y="4" width="10" height="352" fill="rgba(79,120,200,.1)"/>
-            <rect class="zone-rect" data-zone="BILLING_QUEUE"           x="594" y="4"   width="140" height="280" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" x="664" y="120">Billing Queue</text>
-            <text class="zone-sublabel" x="664" y="134">Customer Area</text>
-
-            <rect class="zone-rect" data-zone="CASH_COUNTER"            x="594" y="288" width="140" height="68" rx="4" fill="#132038"/>
-            <text class="zone-label" x="664" y="318">Cash Counter</text>
-            <text class="zone-sublabel" x="664" y="330">Staff Zone ⭐</text>
-
-            <rect class="zone-rect" data-zone="ACCESSORIES_DISPLAY"     x="740" y="4"   width="76" height="352" rx="4" fill="#1A2F54"/>
-            <text class="zone-label" transform="rotate(-90,778,180)" x="778" y="180">Accessories</text>
-
-            <!-- Entry threshold line -->
-            <line x1="32" y1="130" x2="32" y2="230" stroke="var(--green)" stroke-width="2" stroke-dasharray="4,3" opacity=".7"/>
-            <polygon points="35,160 40,165 35,170" fill="var(--green)" opacity=".7"/>
-
-            <!-- Visitor count indicator -->
-            <rect x="470" y="74" width="105" height="155" rx="4" fill="#0D1629" opacity=".5"/>
-            <text class="zone-sublabel" x="522" y="140">Fragrance</text>
-            <text class="zone-sublabel" x="522" y="154">& Nail Zone</text>
-          </svg>
-        </div>
-        <div class="plan-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#1D4ED8;opacity:.7"></div>Low activity</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#7C3AED;opacity:.7"></div>Medium</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#DC2626;opacity:.7"></div>High activity</div>
-          <div class="legend-item" style="margin-left:auto;font-size:10px;color:var(--txt3)">Zones from real footage calibration</div>
-        </div>
-      </div>
-
-      <!-- Conversion Funnel -->
-      <div class="card">
-        <div class="card-hdr">
-          <div class="card-title">🔽 Conversion Funnel</div>
-          <div class="card-badge" id="funnelDate">—</div>
-        </div>
-        <div class="funnel-wrap" id="funnelWrap">
-          <div class="shimmer" style="height:180px;border-radius:8px"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Bottom row: anomalies + feed -->
-    <div class="bot-row">
-
-      <!-- Anomalies -->
-      <div class="card">
-        <div class="card-hdr">
-          <div class="card-title">🚨 Active Anomalies</div>
-          <div class="card-badge" id="anomalyCount" style="background:var(--green-dim);color:var(--green)">All clear</div>
-        </div>
-        <div class="anomaly-list" id="anomalyList">
-          <div class="a-empty"><span class="a-empty-icon">✅</span>No anomalies detected</div>
-        </div>
-      </div>
-
-      <!-- Live event feed -->
-      <div class="card feed">
-        <div class="card-hdr">
-          <div class="card-title">⚡ Live Event Feed</div>
-          <div class="card-badge" id="feedCount" style="background:var(--cyan-dim);color:var(--cyan)">0 events</div>
-        </div>
-        <div class="feed-inner" id="feedList">
-          <div class="feed-empty">Waiting for live events…</div>
-        </div>
-      </div>
-
-    </div>
-
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /shell -->
+</div>
 
 <script>
-// ── State ─────────────────────────────────────────────────────────
-let store       = 'STORE_BLR_002';
-let queryDate   = '';
-let es          = null;
-let prevMetrics = {};
-let sparkData   = {visitors:[],conv:[],queue:[],abandon:[]};
-let feedIds     = new Set();
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+let store = 'STORE_BLR_002';
+let queryDate = '';
+let es = null;
+let prev = {};
+let sparkData = { visitors: [], conv: [], queue: [], abandon: [] };
 let sparkCharts = {};
-const FUNNEL_COLORS = ['#9B7DF8','#7C5CE8','#5B3CC8','#3A1EA8'];
+let feedIds = new Set();
+let lastEventCount = 0;
+const FUNNEL_COLORS = ['#9B7DF8', '#7C5CE8', '#5B3CC8', '#3A1EA8'];
 
-// ── Sparkline setup ───────────────────────────────────────────────
-function initSparks() {
-  const cfg = (color) => ({
-    type:'line',
-    data:{labels:Array(20).fill(''),datasets:[{data:Array(20).fill(null),borderColor:color,borderWidth:2,fill:true,backgroundColor:color+'18',tension:.4,pointRadius:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:{duration:400}}
-  });
-  sparkCharts.visitors = new Chart(document.getElementById('sparkVisitors'), cfg('var(--purple)'));
-  sparkCharts.conv     = new Chart(document.getElementById('sparkConv'),     cfg('#22E88A'));
-  sparkCharts.queue    = new Chart(document.getElementById('sparkQueue'),    cfg('#FFB347'));
-  sparkCharts.abandon  = new Chart(document.getElementById('sparkAbandon'),  cfg('#FF4F6D'));
+// ════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════
+async function init() {
+  initSparklines();
+  startClock();
+  await loadStores();
 }
 
-function pushSpark(key, val, chartKey) {
+function initSparklines() {
+  const mk = (id, color) => new Chart(document.getElementById(id), {
+    type: 'line',
+    data: {
+      labels: Array(20).fill(''),
+      datasets: [{
+        data: Array(20).fill(null),
+        borderColor: color, borderWidth: 2,
+        fill: true, backgroundColor: color + '22',
+        tension: 0.4, pointRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+      animation: { duration: 500 }
+    }
+  });
+  sparkCharts.visitors = mk('sparkVisitors', '#9B7DF8');
+  sparkCharts.conv     = mk('sparkConv',     '#22E88A');
+  sparkCharts.queue    = mk('sparkQueue',    '#FFB347');
+  sparkCharts.abandon  = mk('sparkAbandon',  '#FF4F6D');
+}
+
+function pushSpark(key, val) {
   sparkData[key].push(val);
   if (sparkData[key].length > 20) sparkData[key].shift();
-  const chart = sparkCharts[chartKey];
-  chart.data.datasets[0].data = [...sparkData[key]];
-  chart.update('none');
+  sparkCharts[key].data.datasets[0].data = [...sparkData[key]];
+  sparkCharts[key].update('none');
 }
 
-// ── Clock ─────────────────────────────────────────────────────────
-setInterval(() => {
-  document.getElementById('liveTime').textContent =
-    new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour12:false}).slice(0,5);
-}, 1000);
-
-// ── Init ──────────────────────────────────────────────────────────
-async function init() {
-  initSparks();
-  // Set default date to today or known clip date
-  const today = new Date().toISOString().split('T')[0];
-  queryDate = today;
-  document.getElementById('datePicker').value = today;
-  document.getElementById('dateChip').textContent = '📅 ' + today;
-  await loadStores();
+function startClock() {
+  setInterval(() => {
+    const now = new Date();
+    document.getElementById('liveTime').textContent =
+      now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }).slice(0, 5);
+  }, 1000);
 }
 
 async function loadStores() {
@@ -480,18 +1039,21 @@ async function loadStores() {
     const d = await r.json();
     const sel = document.getElementById('storeSelect');
     sel.innerHTML = '';
-    (d.stores||['STORE_BLR_002']).forEach(s => {
+    const stores = d.stores || ['STORE_BLR_002'];
+    stores.forEach(s => {
       const o = document.createElement('option');
-      o.value = s; o.textContent = s.replace(/_/g,' ');
+      o.value = s;
+      o.textContent = s.replace(/_/g, ' ');
       sel.appendChild(o);
     });
-    changeStore(d.stores?.[0]||'STORE_BLR_002');
-  } catch { changeStore('STORE_BLR_002'); }
+    changeStore(stores[0]);
+  } catch (e) {
+    changeStore('STORE_BLR_002');
+  }
 }
 
 function changeStore(s) {
   store = s;
-  document.getElementById('pageStoreId').textContent = '— ' + s;
   document.getElementById('storeSelect').value = s;
   connectSSE();
 }
@@ -502,20 +1064,23 @@ function changeDate(d) {
   connectSSE();
 }
 
-// ── SSE ───────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+// SSE
+// ════════════════════════════════════════════════════════════════════
 function connectSSE() {
   if (es) es.close();
-  setDot('connecting');
+  setLiveStatus('connecting');
   es = new EventSource(`/stores/${store}/stream`);
-  es.onopen = () => setDot('live');
-  es.onerror = () => { setDot('error'); setTimeout(connectSSE, 5000); };
+  es.onopen = () => setLiveStatus('live');
+  es.onerror = () => {
+    setLiveStatus('error');
+    setTimeout(connectSSE, 5000);
+  };
   es.onmessage = (e) => {
     try {
       const b = JSON.parse(e.data);
       if (b.error) return;
 
-      // Sync date picker to the date the server is actually using
-      // (the most recent date with real data — not necessarily today)
       if (b.effective_date && b.effective_date !== queryDate) {
         queryDate = b.effective_date;
         document.getElementById('datePicker').value = b.effective_date;
@@ -523,231 +1088,296 @@ function connectSSE() {
       }
 
       if (!b.has_data) {
-        showNoData();
+        showEmptyState();
         return;
       }
 
       renderAll(b);
-    } catch(err) { console.error('SSE parse error:', err); }
+    } catch (err) { console.error(err); }
   };
 }
 
-function showNoData() {
-  document.getElementById('kpiVisitors').textContent  = '0';
-  document.getElementById('kpiConv').textContent      = '0%';
-  document.getElementById('kpiQueue').textContent     = '0';
-  document.getElementById('kpiAbandon').textContent   = '0%';
-  document.getElementById('funnelWrap').innerHTML =
-    '<div style="text-align:center;padding:48px 20px;color:var(--txt3)">' +
-    '<div style="font-size:28px;margin-bottom:12px">📭</div>' +
-    '<div style="font-size:13px;font-weight:600;margin-bottom:8px">No events ingested yet</div>' +
-    '<div style="font-size:11px;line-height:1.7">Run the pipeline first:<br>' +
-    '<code style="background:var(--bg2);padding:4px 8px;border-radius:4px;font-size:10px">./pipeline/run.sh</code><br>' +
-    'Then ingest:<br>' +
-    '<code style="background:var(--bg2);padding:4px 8px;border-radius:4px;font-size:10px">python scripts/seed_events.py</code>' +
-    '</div></div>';
-  document.getElementById('feedList').innerHTML =
-    '<div class="feed-empty">No events — ingest data to see the live feed</div>';
+function setLiveStatus(state) {
+  const card = document.getElementById('liveCard');
+  const dot = document.getElementById('liveDot');
+  const txt = document.getElementById('liveStatus');
+  card.className = 'live-card';
+  dot.className = 'live-dot';
+  if (state === 'live') {
+    card.classList.add('live');
+    txt.textContent = 'Live';
+  } else if (state === 'error') {
+    card.classList.add('error');
+    dot.classList.add('error');
+    txt.textContent = 'Reconnecting…';
+  } else {
+    dot.classList.add('connecting');
+    txt.textContent = 'Connecting…';
+  }
 }
 
-function setDot(state) {
-  const d = document.getElementById('liveDot');
-  const t = document.getElementById('liveStatus');
-  d.className = 'live-dot';
-  if (state === 'live')       { d.classList.add('live-dot'); t.textContent = 'Live'; }
-  else if (state === 'error') { d.className = 'live-dot error'; t.textContent = 'Reconnecting…'; }
-  else                        { d.className = 'live-dot connecting'; t.textContent = 'Connecting…'; }
+function showEmptyState() {
+  document.getElementById('content').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <div class="empty-state-title">No data ingested yet</div>
+      <div class="empty-state-text">
+        Run the detection pipeline on real CCTV footage, then ingest the events.
+        The dashboard will auto-detect the footage date and populate immediately.
+      </div>
+      <div class="empty-state-code">./pipeline/run.sh && python scripts/ingest_real.py</div>
+    </div>
+  `;
 }
 
-// ── Render all ────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════════════
 function renderAll(b) {
-  renderMetrics(b.metrics  || {});
-  renderFunnel(b.funnel    || {});
-  renderHeatmap(b.heatmap  || {});
+  renderHero(b.metrics || {}, b.funnel || {}, b.heatmap || {});
+  renderMetrics(b.metrics || {});
+  renderFunnel(b.funnel || {});
+  renderHeatmap(b.heatmap || {});
   renderAnomalies(b.anomalies || {});
   renderFeed(b.recent_events || []);
 }
 
-// ── Metrics ───────────────────────────────────────────────────────
+// ── HERO ──────────────────────────────────────────────
+function renderHero(m, f, h) {
+  const conv = (m.conversion_rate || 0) * 100;
+  anim('heroMetric', prev.heroConv || 0, conv, v => v.toFixed(1) + '%', 900);
+  prev.heroConv = conv;
+
+  const visitors = m.unique_visitors || 0;
+  const purchases = (f.stages || []).find(s => s.stage === 'Purchase')?.count || 0;
+  const zones = (h.zones || []).filter(z => z.raw_visit_count > 0).length;
+
+  document.getElementById('heroVisitors').textContent = visitors;
+  document.getElementById('heroPurchases').textContent = purchases;
+  document.getElementById('heroZones').textContent = zones;
+
+  document.getElementById('heroSub').innerHTML =
+    `<b>${purchases}</b> of <b>${visitors}</b> visitors converted to purchases today`;
+}
+
+// ── KPIs ──────────────────────────────────────────────
 function renderMetrics(m) {
   const v = m.unique_visitors     || 0;
   const c = m.conversion_rate     || 0;
   const q = m.current_queue_depth || 0;
   const a = m.abandonment_rate    || 0;
 
-  anim('kpiVisitors', prevMetrics.v||0, v, x => Math.round(x).toLocaleString());
-  anim('kpiConv',     prevMetrics.c||0, c, x => (x*100).toFixed(1)+'%');
-  anim('kpiQueue',    prevMetrics.q||0, q, x => Math.round(x).toString());
-  anim('kpiAbandon',  prevMetrics.a||0, a, x => (x*100).toFixed(1)+'%');
+  anim('kpiVisitors', prev.v || 0, v, x => Math.round(x).toLocaleString());
+  anim('kpiConv',     prev.c || 0, c, x => (x * 100).toFixed(1) + '%');
+  anim('kpiQueue',    prev.q || 0, q, x => Math.round(x).toString());
+  anim('kpiAbandon',  prev.a || 0, a, x => (x * 100).toFixed(1) + '%');
 
-  // Color queue by severity
   const qEl = document.getElementById('kpiQueue');
-  qEl.style.color = q>=8 ? 'var(--red)' : q>=5 ? 'var(--amber)' : 'var(--txt)';
+  qEl.style.color = q >= 8 ? 'var(--bad)' : q >= 5 ? 'var(--warn)' : 'var(--t-1)';
 
-  // Trends vs previous
-  setTrend('visitorsTrend', v, prevMetrics.v);
-  setTrend('convTrend',     c, prevMetrics.c);
-  setTrend('queueTrend',    q, prevMetrics.q, true); // higher queue = worse
-  setTrend('abandonTrend',  a, prevMetrics.a, true);
+  setTrend('visitorsTrend', v, prev.v);
+  setTrend('convTrend',     c, prev.c);
+  setTrend('queueTrend',    q, prev.q, true);
+  setTrend('abandonTrend',  a, prev.a, true);
 
-  // Sparklines
-  pushSpark('visitors', v, 'visitors');
-  pushSpark('conv',     c*100, 'conv');
-  pushSpark('queue',    q, 'queue');
-  pushSpark('abandon',  a*100, 'abandon');
+  pushSpark('visitors', v);
+  pushSpark('conv',     c * 100);
+  pushSpark('queue',    q);
+  pushSpark('abandon',  a * 100);
 
-  prevMetrics = {v,c,q,a};
+  prev = { ...prev, v, c, q, a };
 }
 
-function setTrend(id, cur, prev, invertGood=false) {
+function setTrend(id, cur, prev, invertGood = false) {
   const el = document.getElementById(id);
-  if (prev === undefined || cur === prev) { el.className='kpi-trend flat'; el.textContent='—'; return; }
+  if (prev === undefined || cur === prev) {
+    el.className = 'kpi-trend flat'; el.textContent = '—';
+    return;
+  }
   const up = cur > prev;
   const good = invertGood ? !up : up;
-  el.className = 'kpi-trend ' + (good?'up':'down');
-  el.textContent = (up?'↑':'↓') + ' ' + Math.abs(((cur-prev)/Math.max(Math.abs(prev),0.0001)*100)).toFixed(0)+'%';
+  el.className = 'kpi-trend ' + (good ? 'up' : 'down');
+  const pct = Math.abs((cur - prev) / Math.max(Math.abs(prev), 0.0001) * 100);
+  el.textContent = (up ? '↑' : '↓') + ' ' + pct.toFixed(0) + '%';
 }
 
-function anim(id, from, to, fmt, dur=700) {
+function anim(id, from, to, fmt, dur = 700) {
   const el = document.getElementById(id);
   if (!el) return;
   const t0 = performance.now();
   const tick = (now) => {
-    const p = Math.min((now-t0)/dur, 1);
-    const e = 1 - Math.pow(1-p, 3);
-    el.textContent = fmt(from + (to-from)*e);
-    if (p<1) requestAnimationFrame(tick);
+    const p = Math.min((now - t0) / dur, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
 
-// ── Funnel ────────────────────────────────────────────────────────
-function renderFunnel(data) {
-  const wrap = document.getElementById('funnelWrap');
-  const stages = data.stages || [];
-  document.getElementById('funnelDate').textContent = data.date || '—';
+// ── FUNNEL ────────────────────────────────────────────
+function renderFunnel(d) {
+  const stages = d.stages || [];
+  const wrap = document.getElementById('funnel');
+  document.getElementById('funnelDate').textContent = d.date || '—';
 
   if (!stages.length) {
-    wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--txt3)">No funnel data yet</div>';
+    wrap.innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">📊</div>No funnel data yet</div>';
     return;
   }
 
   const max = stages[0]?.count || 1;
-  wrap.innerHTML = stages.map((s,i) => {
-    const pct  = max > 0 ? Math.round(s.count/max*100) : 0;
-    const col  = FUNNEL_COLORS[i] || '#3A1EA8';
-    const drop = i > 0 && s.drop_off_pct > 0 ? `<span class="funnel-drop">↓ ${s.drop_off_pct}% dropped off</span>` : '';
+  wrap.innerHTML = stages.map((s, i) => {
+    const pct = max > 0 ? Math.round(s.count / max * 100) : 0;
+    const col = FUNNEL_COLORS[i] || '#3A1EA8';
+    const drop = i > 0 && s.drop_off_pct > 0
+      ? `<div class="funnel-drop">↓ ${s.drop_off_pct}% dropped off</div>` : '';
     return `
       <div class="funnel-stage">
-        <div class="funnel-hdr">
+        <div class="funnel-row">
           <span class="funnel-name">${s.stage}</span>
           <span class="funnel-num" style="color:${col}">${s.count.toLocaleString()}</span>
         </div>
-        <div class="funnel-bar-bg">
-          <div class="funnel-bar-fg" style="width:${pct}%;background:linear-gradient(90deg,${col},${col}88)"></div>
+        <div class="funnel-bar">
+          <div class="funnel-fill" style="width:${pct}%;background:linear-gradient(90deg, ${col}, ${col}99)"></div>
         </div>
         ${drop}
       </div>`;
   }).join('');
 }
 
-// ── Floor plan heatmap ────────────────────────────────────────────
+// ── HEATMAP ───────────────────────────────────────────
 function scoreColor(s) {
-  // Cool blue → purple → hot red
-  if (s <= 50) return lerpColor('#1E3A8A','#7C3AED', s/50);
-  return lerpColor('#7C3AED','#DC2626', (s-50)/50);
+  if (s <= 50) return lerp('#1E3A8A', '#7C3AED', s / 50);
+  return lerp('#7C3AED', '#DC2626', (s - 50) / 50);
 }
 
-function lerpColor(a, b, t) {
-  const h = s => [parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
-  const [ar,ag,ab] = h(a), [br,bg,bb] = h(b);
-  return `rgba(${Math.round(ar+(br-ar)*t)},${Math.round(ag+(bg-ag)*t)},${Math.round(ab+(bb-ab)*t)},0.75)`;
+function lerp(a, b, t) {
+  const h = s => [parseInt(s.slice(1,3),16), parseInt(s.slice(3,5),16), parseInt(s.slice(5,7),16)];
+  const [r1,g1,b1] = h(a), [r2,g2,b2] = h(b);
+  const r = Math.round(r1 + (r2-r1)*t);
+  const g = Math.round(g1 + (g2-g1)*t);
+  const bv = Math.round(b1 + (b2-b1)*t);
+  return `rgba(${r}, ${g}, ${bv}, 0.78)`;
 }
 
-function renderHeatmap(data) {
-  const zones = data.zones || [];
-  const conf  = data.data_confidence;
-  document.getElementById('heatmapConf').style.display = (!conf && zones.length) ? 'block' : 'none';
+function renderHeatmap(d) {
+  const zones = d.zones || [];
+  const zMap = {};
+  zones.forEach(z => zMap[z.zone_id] = z);
 
-  const zoneMap = {};
-  zones.forEach(z => {
-    zoneMap[z.zone_id] = (z.visit_score + z.dwell_score) / 2;
-  });
-
-  // Update SVG zone colors
   document.querySelectorAll('.zone-rect').forEach(el => {
-    const zid   = el.dataset.zone;
-    const score = zoneMap[zid] ?? 0;
-    el.style.fill = score > 0 ? scoreColor(score) : '#1A2F54';
-    if (score > 0) {
-      const tip = zones.find(z=>z.zone_id===zid);
-      el.setAttribute('title', tip ? `${zid}: visits=${tip.raw_visit_count}, dwell=${(tip.raw_avg_dwell_ms/1000).toFixed(0)}s` : zid);
+    const zid = el.dataset.zone;
+    const z = zMap[zid];
+    if (z && z.raw_visit_count > 0) {
+      const score = (z.visit_score + z.dwell_score) / 2;
+      el.style.fill = scoreColor(score);
+      el.setAttribute('title', `${zid.replace(/_/g, ' ')}\nVisits: ${z.raw_visit_count}\nAvg dwell: ${(z.raw_avg_dwell_ms/1000).toFixed(0)}s`);
+    } else {
+      el.style.fill = '#131D40';
+      el.setAttribute('title', zid.replace(/_/g, ' ') + '\nNo data');
     }
   });
+
+  document.getElementById('floorBadge').textContent =
+    d.data_confidence ? `${zones.filter(z=>z.raw_visit_count>0).length} active` : 'Low data';
+  document.getElementById('floorBadge').className = 'card-badge' + (d.data_confidence ? ' ok' : ' warn');
 }
 
-// ── Anomalies ─────────────────────────────────────────────────────
-function renderAnomalies(data) {
-  const list  = document.getElementById('anomalyList');
+// ── ANOMALIES ─────────────────────────────────────────
+function renderAnomalies(d) {
+  const items = d.anomalies || [];
+  const panel = document.getElementById('anomalyPanel');
   const badge = document.getElementById('anomalyCount');
-  const items = data.anomalies || [];
 
   if (!items.length) {
-    list.innerHTML = '<div class="a-empty"><span class="a-empty-icon">✅</span>No anomalies detected</div>';
+    panel.innerHTML = `
+      <div class="empty-good">
+        <div class="empty-good-icon">✓</div>
+        <div class="empty-good-text"><b>All systems normal</b><br>No anomalies in the current window</div>
+      </div>`;
     badge.textContent = 'All clear';
-    badge.style.background = 'var(--green-dim)';
-    badge.style.color = 'var(--green)';
+    badge.className = 'card-badge ok';
     return;
   }
 
-  const crit = items.filter(a=>a.severity==='CRITICAL').length;
-  badge.textContent = crit ? `${crit} CRITICAL` : `${items.length} active`;
-  badge.style.background = crit ? 'var(--red-dim)' : 'var(--amber-dim)';
-  badge.style.color = crit ? 'var(--red)' : 'var(--amber)';
+  const crit = items.filter(a => a.severity === 'CRITICAL').length;
+  badge.textContent = crit ? `${crit} critical` : `${items.length} active`;
+  badge.className = 'card-badge ' + (crit ? 'bad' : 'warn');
 
-  list.innerHTML = items.map(a => {
-    const ts   = (a.detected_at||'').split('T')[1]?.slice(0,8) || '';
-    const zone = a.zone_id ? ` · ${a.zone_id.replace(/_/g,' ')}` : '';
-    const cur  = a.current_value  != null ? ` · current: ${a.current_value}` : '';
+  panel.innerHTML = `<div class="anomalies">${items.map(a => {
+    const ts = (a.detected_at || '').split('T')[1]?.slice(0, 8) || '';
+    const zone = a.zone_id ? ` · ${a.zone_id.replace(/_/g, ' ')}` : '';
+    const cur = a.current_value != null ? ` · current: ${a.current_value}` : '';
     const base = a.baseline_value != null ? ` · baseline: ${a.baseline_value}` : '';
-    const conf = !a.data_confidence ? '<span style="font-size:9px;color:var(--amber)"> [low data]</span>' : '';
-    return `<div class="anomaly ${a.severity}">
-      <span class="a-badge ${a.severity}">${a.severity}</span>
-      <div>
-        <div class="a-type">${a.anomaly_type.replace(/_/g,' ')}${zone}${conf}</div>
-        <div class="a-action">${a.suggested_action}</div>
-        <div class="a-meta">${ts} UTC${cur}${base}</div>
-      </div>
-    </div>`;
-  }).join('');
+    const conf = !a.data_confidence ? ' <span style="font-size:9px;color:var(--warn)">[low data]</span>' : '';
+    return `
+      <div class="anomaly ${a.severity}">
+        <span class="a-tag ${a.severity}">${a.severity}</span>
+        <div class="a-content">
+          <div class="a-type">${a.anomaly_type.replace(/_/g, ' ')}${zone}${conf}</div>
+          <div class="a-action">${a.suggested_action}</div>
+          <div class="a-meta">${ts} UTC${cur}${base}</div>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
 }
 
-// ── Event feed ────────────────────────────────────────────────────
+// ── EVENT FEED ────────────────────────────────────────
 function renderFeed(events) {
-  const list  = document.getElementById('feedList');
-  const badge = document.getElementById('feedCount');
+  const list = document.getElementById('feedList');
+  const badge = document.getElementById('feedBadge');
+  const totalEl = document.getElementById('eventTotal');
 
-  if (!events.length) { list.innerHTML = '<div class="feed-empty">Waiting for events…</div>'; return; }
-  badge.textContent = events.length + ' events';
+  if (!events.length) {
+    list.innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">📡</div>Waiting for events…</div>';
+    badge.textContent = '0 events';
+    totalEl.textContent = '0';
+    return;
+  }
 
-  list.innerHTML = events.map((e,i) => {
-    const ts   = (e.timestamp||'').split('T')[1]?.slice(0,8) || '—';
-    const vis  = (e.visitor_id||'').slice(0,12);
-    const zone = e.zone_id ? e.zone_id.replace(/_/g,' ') : (e.event_type==='ENTRY'?'store entry':'—');
-    const isN  = !feedIds.has(e.event_id) && i===0;
-    if (e.event_id) feedIds.add(e.event_id);
-    return `<div class="feed-row${isN?' new':''}">
-      <span class="feed-ts">${ts}</span>
-      <span class="feed-vis">${vis}</span>
-      <span class="chip ${e.event_type}">${e.event_type}</span>
-      <span class="feed-zone">${zone}</span>
+  badge.textContent = events.length + ' recent';
+
+  // Track newly arrived events for animation
+  const newEvents = events.filter(e => e.event_id && !feedIds.has(e.event_id));
+  events.forEach(e => e.event_id && feedIds.add(e.event_id));
+
+  // Trigger zone pulse for events with zones
+  newEvents.slice(0, 3).forEach(e => {
+    if (e.zone_id) pulseZone(e.zone_id);
+  });
+
+  // Update event total counter
+  if (feedIds.size > lastEventCount) {
+    lastEventCount = feedIds.size;
+    totalEl.textContent = feedIds.size.toLocaleString();
+  }
+
+  list.innerHTML = events.map((e, i) => {
+    const ts = (e.timestamp || '').split('T')[1]?.slice(0, 8) || '—';
+    const vid = (e.visitor_id || '').slice(0, 11);
+    const zone = e.zone_id ? e.zone_id.replace(/_/g, ' ') : (e.event_type === 'ENTRY' ? 'store entry' : '—');
+    const isNew = i < newEvents.length;
+    return `<div class="feed-row${isNew ? ' new' : ''}">
+      <span class="f-ts">${ts}</span>
+      <span class="f-vid">${vid}</span>
+      <span class="event-chip ${e.event_type}">${e.event_type.replace(/_/g, ' ')}</span>
+      <span class="f-zone">${zone}</span>
     </div>`;
   }).join('');
 
-  if (feedIds.size > 300) feedIds = new Set([...feedIds].slice(-150));
+  if (feedIds.size > 500) feedIds = new Set([...feedIds].slice(-250));
 }
 
-// ── Boot ──────────────────────────────────────────────────────────
+function pulseZone(zoneId) {
+  const el = document.querySelector(`.zone-rect[data-zone="${zoneId}"]`);
+  if (el) {
+    el.classList.remove('active-pulse');
+    void el.offsetWidth;  // force reflow to restart animation
+    el.classList.add('active-pulse');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
