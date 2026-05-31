@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -52,6 +53,38 @@ EVENTS_FILE = ROOT / "data" / "events_real.jsonl"
 API_URL = "http://localhost:8000"
 
 console = Console()
+
+IS_WINDOWS = os.name == "nt"
+
+
+def venv_python() -> str:
+    """Path to the venv's Python interpreter, cross-platform.
+
+    Windows venvs put the interpreter in Scripts\\python.exe; POSIX uses
+    bin/python. Falls back to the current interpreter if no venv is found.
+    """
+    if IS_WINDOWS:
+        candidate = ROOT / ".venv" / "Scripts" / "python.exe"
+    else:
+        candidate = ROOT / ".venv" / "bin" / "python"
+    return str(candidate) if candidate.exists() else sys.executable
+
+
+def pipeline_env() -> dict:
+    """Environment for the pipeline subprocess.
+
+    Redirects temp files into the project's .cache so the YOLO/torch
+    download cache stays local and predictable. Inherits the parent
+    environment so OS-specific lookups (DLLs, PATH) keep working on Windows.
+    """
+    env = dict(os.environ)
+    cache_dir = ROOT / ".cache"
+    cache_dir.mkdir(exist_ok=True)
+    cache = str(cache_dir)
+    env["TMPDIR"] = cache   # POSIX
+    env["TEMP"] = cache     # Windows
+    env["TMP"] = cache      # Windows
+    return env
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -226,8 +259,7 @@ def run_pipeline(skip: bool = False) -> bool:
         info(f"Existing events file: {line_count} events. Re-running pipeline...")
         EVENTS_FILE.unlink()
 
-    venv_python = ROOT / ".venv" / "bin" / "python"
-    py = str(venv_python) if venv_python.exists() else "python3"
+    py = venv_python()
 
     console.print()
     console.print("  [dim cyan]Processing 4 cameras (CAM 4 stockroom skipped):[/]")
@@ -250,7 +282,7 @@ def run_pipeline(skip: bool = False) -> bool:
         proc = subprocess.Popen(
             cmd, cwd=ROOT,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=1, env={"TMPDIR": str(ROOT / ".cache"), "PATH": "/usr/bin:/bin"},
+            text=True, bufsize=1, env=pipeline_env(),
         )
 
         # Show key progress lines only

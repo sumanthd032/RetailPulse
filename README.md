@@ -10,21 +10,40 @@ End-to-end pipeline that turns raw CCTV footage into real-time store analytics. 
 
 ```bash
 # Clone
-git clone https:/github.com/sumanthd032/RetailPulse && cd RetailPulse
+git clone https://github.com/sumanthd032/RetailPulse
+cd RetailPulse
 
-# Python virtual environment (for the pipeline — heavier deps)
+# Create the virtual environment (for the pipeline — heavier deps)
 python3 -m venv .venv
-.venv/bin/pip install -r requirements-pipeline.txt
 ```
 
-The API runs in Docker and doesn't need the venv.
+Activate it, then install the pipeline dependencies:
+
+**macOS / Linux**
+```bash
+source .venv/bin/activate
+pip install -r requirements-pipeline.txt
+```
+
+**Windows (PowerShell)**
+```powershell
+.venv\Scripts\Activate.ps1
+pip install -r requirements-pipeline.txt
+```
+
+> On Windows, `python` usually replaces `python3`. If `python3 -m venv` fails, use `python -m venv .venv`.
+>
+> If PowerShell blocks the activation script, allow it for the current user once:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+Once the venv is active, every command below is the same on all platforms — just `python ...`. The API itself runs in Docker and doesn't need the venv.
 
 ---
 
 ## The Canonical Workflow — One Command
 
 ```bash
-.venv/bin/python run.py
+python run.py
 ```
 
 This single command does the entire end-to-end run with interactive terminal feedback:
@@ -50,16 +69,16 @@ After that, the dashboard auto-opens at `http://localhost:8000`.
 
 **Options:**
 ```bash
-.venv/bin/python run.py --skip-pipeline    # if events_real.jsonl already exists
-.venv/bin/python run.py --no-open          # don't open browser
-.venv/bin/python run.py --replay           # Part E live demo (real-time replay)
-.venv/bin/python run.py --replay --speed 50 --reset   # 50× speed from empty DB
+python run.py --skip-pipeline    # if events_real.jsonl already exists
+python run.py --no-open          # don't open browser
+python run.py --replay           # Part E live demo (real-time replay)
+python run.py --replay --speed 50 --reset   # 50× speed from empty DB
 ```
 
 Want to run the steps manually? See "Manual Workflow" below.
 
 **What you'll see** (numbers from actual CCTV detection):
-- 50 unique visitors detected by YOLOv8
+- ~50 unique visitors detected by YOLOv8
 - 20% conversion rate (computed from POS correlation, 5-min window)
 - 8 zones with real visit data on the heatmap
 - Live event feed showing the most recent events
@@ -74,10 +93,13 @@ Want to run the steps manually? See "Manual Workflow" below.
 docker compose up -d --build
 
 # 2. Run detection on real CCTV (or skip if data/events_real.jsonl exists)
+#    macOS / Linux:
 ./pipeline/run.sh
+#    Windows (PowerShell):
+.\pipeline\run.ps1
 
 # 3. Ingest events
-.venv/bin/python scripts/ingest_real.py
+python scripts/ingest_real.py
 ```
 
 ---
@@ -85,7 +107,7 @@ docker compose up -d --build
 ## Part E Bonus — Live Real-Time Demo
 
 ```bash
-.venv/bin/python run.py --replay --speed 10 --reset
+python run.py --replay --speed 10 --reset
 ```
 
 This streams the 614 real events through the API in chronological order at 10× speed. The dashboard's SSE connection picks up each batch and updates the floor plan, KPIs, funnel, and event feed live. With `--speed 50` the full clip set replays in ~9 seconds.
@@ -108,7 +130,7 @@ curl -X POST http://localhost:8000/events/ingest \
 curl http://localhost:8000/stores/STORE_BLR_002/metrics
 
 # 4. Detection pipeline produces structured events
-./pipeline/run.sh && head -1 data/events_real.jsonl
+./pipeline/run.sh && head -1 data/events_real.jsonl   # .\pipeline\run.ps1 on Windows
 
 # 5. DESIGN.md and CHOICES.md present (>250 words each)
 wc -w docs/DESIGN.md docs/CHOICES.md
@@ -138,10 +160,10 @@ Interactive API docs at: `http://localhost:8000/api/docs`
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
-78 tests cover:
+79 tests cover:
 - Event schema validation (8 event types, confidence bounds, idempotency)
 - Zone classification (point-in-polygon, entry line crossing)
 - Re-ID gallery (camera handoff, re-entry detection, group entry)
@@ -209,6 +231,8 @@ CCTV Clips → YOLOv8 + ByteTrack + Re-ID gallery → events.jsonl
 ```
 RetailPulse/
 ├── pipeline/              # YOLO + ByteTrack + Re-ID + state machine
+│   ├── run.sh             # Pipeline runner (macOS / Linux)
+│   └── run.ps1            # Pipeline runner (Windows / PowerShell)
 ├── app/                   # FastAPI service
 │   ├── routers/           # /events/ingest, /stores/*
 │   ├── services/          # metrics, funnel, heatmap, anomalies
@@ -222,7 +246,7 @@ RetailPulse/
 │   ├── replay_live.py     # Real-time replay (Part E bonus)
 │   └── test_helpers/
 │       └── seed_events.py # Synthetic events (test only, NOT for demo)
-├── tests/                 # 78 tests, all passing
+├── tests/                 # 79 tests, all passing
 ├── docs/
 │   ├── DESIGN.md
 │   └── CHOICES.md
