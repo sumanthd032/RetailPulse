@@ -54,6 +54,45 @@ def _check_pos_correlation(
     return row is not None
 
 
+def recorrelate_conversions(conn: sqlite3.Connection) -> int:
+    """Re-mark conversions for every billing session against current POS data.
+
+    Conversion is normally set at billing-join ingest time, which assumes POS
+    rows already exist. When POS is loaded or reloaded *after* events are
+    ingested (or in a different order), those sessions would be missed. Running
+    this after any POS load makes conversion correct regardless of load order.
+
+    Uses the same window as ingest-time correlation: a billing-join within the
+    5 minutes before a POS transaction at the same store counts as converted.
+    Returns the number of sessions newly marked converted.
+    """
+    cur = conn.execute(
+        """
+        UPDATE visitor_sessions
+        SET converted = 1
+        WHERE is_staff = 0
+          AND reached_billing = 1
+          AND converted = 0
+          AND EXISTS (
+            SELECT 1
+            FROM events e
+            JOIN pos_transactions p ON p.store_id = e.store_id
+            WHERE e.store_id   = visitor_sessions.store_id
+              AND e.visitor_id = visitor_sessions.visitor_id
+              AND e.event_type = 'BILLING_QUEUE_JOIN'
+              AND REPLACE(REPLACE(p.timestamp,'T',' '),'Z','')
+                    >= REPLACE(REPLACE(e.timestamp,'T',' '),'Z','')
+              AND REPLACE(REPLACE(p.timestamp,'T',' '),'Z','')
+                    <= datetime(REPLACE(REPLACE(e.timestamp,'T',' '),'Z',''), '+300 seconds')
+          )
+        """
+    )
+    conn.commit()
+    if cur.rowcount:
+        logger.info("recorrelated %d session(s) as converted after POS load", cur.rowcount)
+    return cur.rowcount
+
+
 def _upsert_session(conn: sqlite3.Connection, event: StoreEvent) -> None:
     """Incrementally update visitor_sessions for a single newly-inserted event.
 

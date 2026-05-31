@@ -34,11 +34,15 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         log_record = {
             "trace_id": trace_id,
             "method": request.method,
-            "path": request.url.path,
+            "endpoint": request.url.path,
             "store_id": store_id,
             "status_code": response.status_code,
             "latency_ms": latency_ms,
         }
+        # event_count is set by the ingest route; only present for /events/ingest
+        event_count = getattr(request.state, "event_count", None)
+        if event_count is not None:
+            log_record["event_count"] = event_count
         logger.info(json.dumps(log_record))
 
         response.headers["X-Trace-Id"] = trace_id

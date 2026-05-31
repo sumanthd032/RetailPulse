@@ -127,8 +127,11 @@ async def reload_pos():
         conn.commit()
     except Exception as exc:
         return {"error": str(exc), "loaded": 0}
-    logger.info("POS reloaded: %d rows", rows_loaded)
-    return {"loaded": rows_loaded, "source": POS_CSV}
+    # Re-mark conversions for any billing sessions ingested before this POS load
+    from .ingestion import recorrelate_conversions
+    reconverted = recorrelate_conversions(conn)
+    logger.info("POS reloaded: %d rows, %d sessions reconverted", rows_loaded, reconverted)
+    return {"loaded": rows_loaded, "source": POS_CSV, "reconverted": reconverted}
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])

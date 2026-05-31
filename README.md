@@ -164,7 +164,7 @@ pip install pytest          # not bundled in the runtime images
 python -m pytest tests/ -v
 ```
 
-78 tests cover:
+80 tests cover:
 - Event schema validation (8 event types, confidence bounds, idempotency)
 - Zone classification (point-in-polygon, entry line crossing)
 - Re-ID gallery (camera handoff, re-entry detection, group entry)
@@ -250,7 +250,7 @@ RetailPulse/
 │   ├── replay_live.py     # Real-time replay (Part E bonus)
 │   └── test_helpers/
 │       └── seed_events.py # Synthetic events (test only, NOT for demo)
-├── tests/                 # 78 tests, all passing
+├── tests/                 # 80 tests, all passing
 ├── docs/
 │   ├── DESIGN.md
 │   └── CHOICES.md

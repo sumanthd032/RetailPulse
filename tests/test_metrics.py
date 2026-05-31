@@ -311,3 +311,58 @@ class TestHealth:
     def test_health_db_connected(self, client):
         data = client.get("/health").json()
         assert data["db"] == "connected"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. POS correlation is order-independent (events ingested before POS load)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestConversionRecorrelation:
+    def test_conversion_recovered_when_pos_loaded_after_events(self, client):
+        """A billing visitor ingested before POS exists must still convert
+        once POS is loaded and re-correlation runs (load-order independence)."""
+        from app.db import get_db
+        from app.ingestion import recorrelate_conversions
+
+        ts = "2026-03-03T10:05:00Z"
+        client.post("/events/ingest", json={"events": [
+            _make_event("VIS_conv", "BILLING_QUEUE_JOIN",
+                        zone_id="BILLING_QUEUE", queue_depth=1, timestamp=ts),
+        ]})
+
+        # No POS yet → not converted
+        assert client.get("/stores/STORE_TEST/metrics").json()["conversion_rate"] == 0.0
+
+        # POS transaction arrives within 5 min after the billing join
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO pos_transactions (transaction_id, store_id, timestamp, basket_value_inr)"
+            " VALUES (?,?,?,?)",
+            ("TXN_1", "STORE_TEST", "2026-03-03T10:06:30Z", 999.0),
+        )
+        conn.commit()
+
+        reconverted = recorrelate_conversions(conn)
+        assert reconverted == 1
+        assert client.get("/stores/STORE_TEST/metrics").json()["conversion_rate"] == 1.0
+
+    def test_recorrelate_is_idempotent(self, client):
+        """Running re-correlation twice doesn't double-count or error."""
+        from app.db import get_db
+        from app.ingestion import recorrelate_conversions
+
+        ts = "2026-03-03T10:05:00Z"
+        client.post("/events/ingest", json={"events": [
+            _make_event("VIS_c2", "BILLING_QUEUE_JOIN",
+                        zone_id="BILLING_QUEUE", queue_depth=1, timestamp=ts),
+        ]})
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO pos_transactions (transaction_id, store_id, timestamp, basket_value_inr)"
+            " VALUES (?,?,?,?)",
+            ("TXN_2", "STORE_TEST", "2026-03-03T10:06:00Z", 500.0),
+        )
+        conn.commit()
+        assert recorrelate_conversions(conn) == 1
+        assert recorrelate_conversions(conn) == 0  # already converted, no-op
+        assert client.get("/stores/STORE_TEST/metrics").json()["conversion_rate"] == 1.0

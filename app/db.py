@@ -166,6 +166,11 @@ def _load_pos_if_needed() -> None:
     conn.commit()
     logger.info("Loaded %d POS transactions", rows_loaded)
 
+    # If events were already present (e.g. persistent volume) before this first
+    # POS load, re-mark their conversions now that POS data exists.
+    from .ingestion import recorrelate_conversions
+    recorrelate_conversions(conn)
+
 
 def close_db() -> None:
     global _conn

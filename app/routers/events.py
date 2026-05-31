@@ -25,6 +25,8 @@ def ingest(request: Request, body: IngestRequest) -> IngestResponse:
     Malformed events are reported in the errors list, valid ones are ingested.
     """
     trace_id = getattr(request.state, "trace_id", "unknown")
+    # Surface batch size to the structured request log (middleware reads this)
+    request.state.event_count = len(body.events)
 
     valid_events: list[StoreEvent] = []
     pre_errors: list[IngestError] = []
