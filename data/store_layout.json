@@ -1,0 +1,105 @@
+{
+  "store_id": "STORE_BLR_002",
+  "store_name": "Brigade Road",
+  "city": "Bangalore",
+  "open_hours": {
+    "open": "10:00",
+    "close": "21:00",
+    "timezone": "Asia/Kolkata"
+  },
+  "cameras": {
+    "CAM_ENTRY_01": {
+      "type": "entry",
+      "description": "Entry/exit threshold camera — covers glass door and approach area",
+      "entry_line": {
+        "x1_frac": 0.42,
+        "y1_frac": 0.05,
+        "x2_frac": 0.42,
+        "y2_frac": 0.95
+      },
+      "inbound_side": "right",
+      "zones": [
+        {
+          "zone_id": "ENTRY_AREA",
+          "sku_zone": null,
+          "is_staff_zone": false,
+          "polygon_frac": [[0.0, 0.0], [0.55, 0.0], [0.55, 1.0], [0.0, 1.0]]
+        },
+        {
+          "zone_id": "SKINCARE_SHELF",
+          "sku_zone": "SKINCARE",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.55, 0.0], [1.0, 0.0], [1.0, 0.45], [0.55, 0.45]]
+        }
+      ]
+    },
+    "CAM_FLOOR_01": {
+      "type": "floor",
+      "description": "Main floor overhead/angled camera — covers brand bays and center floor",
+      "entry_line": null,
+      "zones": [
+        {
+          "zone_id": "SKINCARE_SHELF",
+          "sku_zone": "SKINCARE",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.0, 0.0], [0.50, 0.0], [0.50, 0.40], [0.0, 0.40]]
+        },
+        {
+          "zone_id": "MAKEUP_UNIT",
+          "sku_zone": "MAKEUP",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.25, 0.30], [0.65, 0.30], [0.65, 0.75], [0.25, 0.75]]
+        },
+        {
+          "zone_id": "FRAGRANCE",
+          "sku_zone": "FRAGRANCE",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.0, 0.30], [0.28, 0.30], [0.28, 0.70], [0.0, 0.70]]
+        },
+        {
+          "zone_id": "HAIRCARE_SHELF",
+          "sku_zone": "HAIRCARE",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.50, 0.0], [1.0, 0.0], [1.0, 0.40], [0.50, 0.40]]
+        },
+        {
+          "zone_id": "COLOUR_COSMETICS",
+          "sku_zone": "COLOUR_COSMETICS",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.0, 0.60], [0.50, 0.60], [0.50, 1.0], [0.0, 1.0]]
+        },
+        {
+          "zone_id": "MENS_CARE",
+          "sku_zone": "MENS_CARE",
+          "is_staff_zone": false,
+          "polygon_frac": [[0.50, 0.60], [0.80, 0.60], [0.80, 1.0], [0.50, 1.0]]
+        },
+        {
+          "zone_id": "FOH",
+          "sku_zone": null,
+          "is_staff_zone": false,
+          "polygon_frac": [[0.65, 0.30], [1.0, 0.30], [1.0, 0.60], [0.65, 0.60]]
+        }
+      ]
+    },
+    "CAM_BILLING_01": {
+      "type": "billing",
+      "description": "Billing area camera — covers cash counter and queue area",
+      "entry_line": null,
+      "zones": [
+        {
+          "zone_id": "BILLING_QUEUE",
+          "sku_zone": null,
+          "is_staff_zone": false,
+          "polygon_frac": [[0.0, 0.0], [0.65, 0.0], [0.65, 1.0], [0.0, 1.0]]
+        },
+        {
+          "zone_id": "CASH_COUNTER",
+          "sku_zone": null,
+          "is_staff_zone": true,
+          "polygon_frac": [[0.65, 0.15], [1.0, 0.15], [1.0, 0.85], [0.65, 0.85]]
+        }
+      ]
+    }
+  }
+}
