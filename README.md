@@ -6,111 +6,108 @@ End-to-end pipeline that turns raw CCTV footage into real-time store analytics. 
 
 ---
 
-## Setup
+## The Canonical Workflow — One Command
+
+Everything runs in Docker. The only prerequisite is **Docker** (with Compose v2 — `docker compose`, ships with Docker Desktop). No Python, no virtualenv, no `pip install` on the host.
 
 ```bash
-# Clone
 git clone https://github.com/sumanthd032/RetailPulse
 cd RetailPulse
 
-# Create the virtual environment (for the pipeline — heavier deps)
-python3 -m venv .venv
+docker compose up --build
 ```
 
-Activate it, then install the pipeline dependencies:
+This single command — identical on macOS, Linux, and Windows — comes up in about a minute:
 
-**macOS / Linux**
-```bash
-source .venv/bin/activate
-pip install -r requirements-pipeline.txt
+1. **`api`** builds the FastAPI service and comes up healthy at `http://localhost:8000`.
+2. **`ingest`** (a one-shot container) waits for the API, then ingests the detection events that ship with the repo (`data/events_real.jsonl`), generates aligned POS data, and prints the live metrics. It exits `0`; the API keeps serving the dashboard.
+
+```
+retailpulse-api     | INFO  Uvicorn running on http://0.0.0.0:8000
+retailpulse-ingest  | POS reloaded: 6 transactions
+retailpulse-ingest  | INGESTED: 398 real events   REJECTED: 0   FOOTAGE DATE: 2026-04-10
+retailpulse-ingest  |   Visitors: 51   Conversion: 21.6%   Queue depth: 0
+retailpulse-ingest exited with code 0
 ```
 
-**Windows (PowerShell)**
-```powershell
-.venv\Scripts\Activate.ps1
-pip install -r requirements-pipeline.txt
-```
+Then open the dashboard at **`http://localhost:8000`**.
 
-> On Windows, `python` usually replaces `python3`. If `python3 -m venv` fails, use `python -m venv .venv`.
->
-> If PowerShell blocks the activation script, allow it for the current user once:
-> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+> The events are pre-computed from the real CCTV footage and committed to the repo, so the demo is fast and doesn't need PyTorch or a GPU. To regenerate them from the raw video yourself, see **Regenerating events** below.
 
-Once the venv is active, every command below is the same on all platforms — just `python ...`. The API itself runs in Docker and doesn't need the venv.
-
----
-
-## The Canonical Workflow — One Command
+To run detached and stop:
 
 ```bash
-python run.py
+docker compose up -d --build    # start in the background
+docker compose down             # stop everything
 ```
-
-This single command does the entire end-to-end run with interactive terminal feedback:
-
-```
-RetailPulse — Store Intelligence System
-
-▶ Step 1/5  Checking environment        ✓ Docker, compose, CCTV clips
-▶ Step 2/5  Starting API (docker)       ✓ Image cached → API healthy in 5s
-▶ Step 3/5  Detection Pipeline          ✓ YOLOv8 on 4 cameras → 614 events
-▶ Step 4/5  Ingesting events            ✓ 614/614 events, 0 rejected
-▶ Step 5/5  Live Metrics                ✓ 50 visitors, 20% conversion
-
-╭──── Live Metrics ────╮  ╭──── Conversion Funnel ────╮  ╭──── Zone Heatmap ────╮
-│ Footage   2026-04-10 │  │ Entry         ████ 50     │  │ Lakme    ████ 18    │
-│ Visitors          50 │  │ Zone Visit    ███▒ 42 ↓16%│  │ Maybellin███▒ 13    │
-│ Conversion     20.0% │  │ Billing Queue █░░░ 10 ↓76%│  │ Billing  ██░░ 10    │
-│ Queue depth        0 │  │ Purchase      █░░░ 10     │  │ Maybel   ██░░ 10    │
-╰──────────────────────╯  ╰───────────────────────────╯  ╰─────────────────────╯
-```
-
-After that, the dashboard auto-opens at `http://localhost:8000`.
-
-**Options:**
-```bash
-python run.py --skip-pipeline    # if events_real.jsonl already exists
-python run.py --no-open          # don't open browser
-python run.py --replay           # Part E live demo (real-time replay)
-python run.py --replay --speed 50 --reset   # 50× speed from empty DB
-```
-
-Want to run the steps manually? See "Manual Workflow" below.
 
 **What you'll see** (numbers from actual CCTV detection):
-- ~50 unique visitors detected by YOLOv8
-- 20% conversion rate (computed from POS correlation, 5-min window)
+- 51 unique visitors detected by YOLOv8
+- 21.6% conversion rate (computed from POS correlation, 5-min window)
 - 8 zones with real visit data on the heatmap
 - Live event feed showing the most recent events
 - Auto-detected date: `2026-04-10` (from the footage timestamp)
 
 ---
 
-## Manual Workflow (if you prefer step-by-step)
+## Regenerating Events from Raw CCTV (opt-in)
+
+The detection events are committed so the demo runs fast, but the full YOLOv8 pipeline is here and reproducible. It's behind a Compose **profile** because it pulls a multi-GB PyTorch image and runs CPU inference for a few minutes — so it never slows down the default run.
 
 ```bash
-# 1. Start the API
-docker compose up -d --build
-
-# 2. Run detection on real CCTV (or skip if data/events_real.jsonl exists)
-#    macOS / Linux:
-./pipeline/run.sh
-#    Windows (PowerShell):
-.\pipeline\run.ps1
-
-# 3. Ingest events
-python scripts/ingest_real.py
+# API must be up first (docker compose up -d), then:
+docker compose --profile detect run --rm pipeline
 ```
+
+This runs detection on all four cameras, overwrites `data/events_real.jsonl`, and re-ingests. The detection model (`yolov8n.pt`) is baked into the image, so it runs offline. On a GPU host, use the host runner below instead for CUDA acceleration.
+
+---
+
+## Optional: Host Runner (`run.py`)
+
+`docker compose up` is the canonical path and needs nothing but Docker. If you'd rather run it on the host — for a nicer live terminal UI, GPU acceleration, or the Part E real-time replay — there's a Python runner. It needs a virtualenv with the pipeline deps:
+
+**macOS / Linux**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-pipeline.txt
+python run.py
+```
+
+**Windows (PowerShell)**
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-pipeline.txt
+python run.py
+```
+
+> If PowerShell blocks the activation script, allow it for the current user once:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+`run.py` orchestrates the same five steps with a rich progress UI and auto-opens the browser. Options:
+
+```bash
+python run.py --skip-pipeline    # if data/events_real.jsonl already exists
+python run.py --no-open          # don't open browser
+python run.py --replay           # Part E live demo (real-time replay)
+python run.py --replay --speed 50 --reset   # 50× speed from empty DB
+```
+
+To run the detection pipeline on its own on the host: `./pipeline/run.sh` (macOS / Linux) or `.\pipeline\run.ps1` (Windows).
 
 ---
 
 ## Part E Bonus — Live Real-Time Demo
 
+Using the host runner (see "Optional: Host Runner" above):
+
 ```bash
 python run.py --replay --speed 10 --reset
 ```
 
-This streams the 614 real events through the API in chronological order at 10× speed. The dashboard's SSE connection picks up each batch and updates the floor plan, KPIs, funnel, and event feed live. With `--speed 50` the full clip set replays in ~9 seconds.
+This streams the real events through the API in chronological order at 10× speed. The dashboard's SSE connection picks up each batch and updates the floor plan, KPIs, funnel, and event feed live. With `--speed 50` the full clip set replays in ~9 seconds.
 
 ---
 
@@ -129,8 +126,9 @@ curl -X POST http://localhost:8000/events/ingest \
 # 3. GET /stores/STORE_BLR_002/metrics returns valid JSON
 curl http://localhost:8000/stores/STORE_BLR_002/metrics
 
-# 4. Detection pipeline produces structured events
-./pipeline/run.sh && head -1 data/events_real.jsonl   # .\pipeline\run.ps1 on Windows
+# 4. Detection pipeline produces structured events (events ship in the repo;
+#    this regenerates them from the raw footage)
+docker compose --profile detect run --rm pipeline && head -1 data/events_real.jsonl
 
 # 5. DESIGN.md and CHOICES.md present (>250 words each)
 wc -w docs/DESIGN.md docs/CHOICES.md
@@ -159,7 +157,10 @@ Interactive API docs at: `http://localhost:8000/api/docs`
 
 ## Tests
 
+Run on the host, in the same venv as the [host runner](#optional-host-runner-runpy):
+
 ```bash
+pip install pytest          # not bundled in the runtime images
 python -m pytest tests/ -v
 ```
 
@@ -194,11 +195,13 @@ Camera mapping was verified by inspecting actual frames (see `data/frames/`).
 
 The footage in `Resources/CCTV Footage/` is sample CCTV — about 2.5 minutes per camera, not the full 20 minutes the problem statement describes. This affects what's visible to the pipeline:
 
-- 614 events emitted across 4 cameras
-- 49 unique visitors (real, detected by YOLOv8)
-- 31 BILLING_QUEUE_JOIN events from CAM 5
-- 276 ZONE_ENTER events from floor cameras
+- 398 events emitted across 4 cameras (the copy committed to the repo)
+- 51 unique visitors (real, detected by YOLOv8)
+- 21 BILLING_QUEUE_JOIN events from CAM 5
+- 175 ZONE_ENTER events from floor cameras
 - Only a handful of explicit ENTRY events (most visitors appear on floor cameras without an explicit entry threshold crossing — short clips don't capture every entry)
+
+(Exact counts vary slightly if you regenerate on different hardware — CPU vs GPU detection differs. These are the numbers in the shipped `data/events_real.jsonl`.)
 
 **POS data was not provided in `Resources/`** — `data/pos_transactions.csv` is generated by `ingest_real.py` to align with detected billing event timestamps. When the evaluator runs their own held-out events, they supply their own POS data.
 
@@ -240,6 +243,7 @@ RetailPulse/
 ├── data/
 │   ├── store_layout.json  # Zone polygons (calibrated from real frames)
 │   ├── clips_config.json  # Camera type mapping
+│   ├── events_real.jsonl  # Pre-computed detection output (shipped for fast demo)
 │   └── pos_transactions.csv
 ├── scripts/
 │   ├── ingest_real.py     # Load real pipeline output (canonical demo path)
@@ -250,7 +254,10 @@ RetailPulse/
 ├── docs/
 │   ├── DESIGN.md
 │   └── CHOICES.md
-├── docker-compose.yml
+├── Dockerfile             # API image (lightweight)
+├── Dockerfile.pipeline    # Detection image (PyTorch + Ultralytics, opt-in)
+├── docker-compose.yml     # api + ingest (default); pipeline behind --profile detect
+├── run.py                 # Optional host runner (rich UI, Part E replay)
 └── README.md
 ```
 

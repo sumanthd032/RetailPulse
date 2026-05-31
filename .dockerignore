@@ -1,0 +1,29 @@
+# Virtualenv / caches — never needed in an image
+.venv
+venv
+.cache
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+
+# VCS / editor / agent
+.git
+.gitignore
+.claude
+
+# Large bind-mounted assets (mounted at runtime, not copied)
+Resources
+
+# Generated data — provided via the ./data volume at runtime
+data/retail.db
+data/retail.db-shm
+data/retail.db-wal
+data/events.jsonl
+data/events_real.jsonl
+data/frames
+
+# Docs not needed at build time
+docs
+tests
+*.md

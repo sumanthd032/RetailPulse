@@ -1,6 +1,10 @@
 services:
+  # ── API ─────────────────────────────────────────────────────────────────
+  # FastAPI service + dashboard. Lightweight image (no ML deps).
+  # Stays up; serves http://localhost:8000.
   api:
     build: .
+    image: retailpulse-api:latest
     container_name: retailpulse-api
     ports:
       - "8000:8000"
@@ -16,3 +20,53 @@ services:
       retries: 10
       start_period: 10s
     restart: unless-stopped
+
+  # ── Ingest (default) ────────────────────────────────────────────────────
+  # One-shot job: waits for the API, then ingests the pre-computed detection
+  # events shipped in the repo (data/events_real.jsonl). No PyTorch, no YOLO —
+  # the whole thing comes up in about a minute. Exits 0 when done.
+  ingest:
+    build: .
+    image: retailpulse-api:latest
+    container_name: retailpulse-ingest
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+    command: ["python", "scripts/ingest_real.py", "--api", "http://api:8000"]
+    healthcheck:
+      disable: true   # one-shot job, not a server
+    restart: "no"
+
+  # ── Detection pipeline (opt-in) ─────────────────────────────────────────
+  # Regenerates events from raw CCTV with YOLOv8. Heavy: pulls a multi-GB
+  # PyTorch image and runs CPU inference for a few minutes. Only runs when the
+  # "detect" profile is selected, so the default `docker compose up` stays fast:
+  #     docker compose --profile detect run --rm pipeline
+  pipeline:
+    profiles: ["detect"]
+    build:
+      context: .
+      dockerfile: Dockerfile.pipeline
+    container_name: retailpulse-pipeline
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./Resources:/app/Resources:ro
+    environment:
+      - FRAME_SKIP=6
+    command:
+      - sh
+      - -c
+      - |
+        python -m pipeline.run \
+          --clips-config data/clips_config.json \
+          --layout data/store_layout.json \
+          --output data/events_real.jsonl \
+          --frame-skip 6 \
+        && python scripts/ingest_real.py --api http://api:8000
+    restart: "no"

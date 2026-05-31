@@ -1,0 +1,27 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps: libGL + glib for OpenCV, ffmpeg for video decoding
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libgl1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Heavy ML stack (torch, ultralytics, opencv, …). Cached as its own layer
+# so code changes don't trigger a full reinstall.
+COPY requirements-pipeline.txt .
+RUN pip install --no-cache-dir -r requirements-pipeline.txt
+
+# Pipeline code + ingest script. app/ is included because pipeline.emit
+# imports the shared event schema from app.models. Detection model is baked
+# in so the container runs fully offline (no first-run download).
+COPY pipeline/ ./pipeline/
+COPY scripts/ ./scripts/
+COPY app/ ./app/
+COPY yolov8n.pt ./yolov8n.pt
+
+# data/ and Resources/ are bind-mounted at runtime (see docker-compose.yml).
+# Default command is overridden by compose; this is a sane fallback.
+CMD ["python", "-m", "pipeline.run"]

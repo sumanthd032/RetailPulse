@@ -13,17 +13,24 @@ pip-log.txt
 dist/
 build/
 
-# ML models (large binaries)
+# ML models (large binaries) — except the small nano model used by the
+# opt-in detection build, which is committed so the image is reproducible.
 *.pt
 *.pth
 *.onnx
 *.engine
 *.weights
+!yolov8n.pt
 
 # Data files
 data/*.db
+data/retail.db*
+data/frames/
 data/events*.jsonl
 *.jsonl
+# Pre-computed detection output IS committed so `docker compose up` works
+# without re-running the heavy YOLO pipeline.
+!data/events_real.jsonl
 # POS data committed as sample (not gitignored)
 # data/pos_transactions.csv is tracked
 
