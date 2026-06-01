@@ -170,8 +170,10 @@ class ReIDGallery:
         short = uuid.uuid4().hex[:6]
         return f"VIS_{short}"
 
-    def _prune(self) -> None:
-        now = time.monotonic()
+    def _prune(self, now: float) -> None:
+        # `now` is footage time (epoch seconds derived from the frame), not
+        # processing wall-clock — so a gallery entry expires after `ttl` seconds
+        # of *store* time, which is what cross-camera handoff and re-entry need.
         stale = [vid for vid, e in self._gallery.items() if now - e.last_seen_ts > self._ttl]
         for vid in stale:
             del self._gallery[vid]
@@ -205,9 +207,15 @@ class ReIDGallery:
         bbox: np.ndarray,
         camera_id: str,
         camera_type: str,
+        now_ts: Optional[float] = None,
         reentry_window_s: int = 300,
     ) -> tuple[str, bool, bool]:
         """Assign or retrieve a visitor_id for a ByteTrack track.
+
+        `now_ts` is footage time (epoch seconds for this frame), so recency
+        windows are measured in store time and a person can be matched across
+        cameras that are running simultaneously. Falls back to wall-clock when
+        not supplied (keeps the gallery usable in isolation, e.g. unit tests).
 
         Returns (visitor_id, is_reentry, is_brand_new).
         is_reentry=True means this should emit a REENTRY event.
@@ -218,8 +226,8 @@ class ReIDGallery:
             return self._track_to_visitor[track_id], False, False
 
         emb = _extract_embedding(frame, bbox)
-        now = time.monotonic()
-        self._prune()
+        now = now_ts if now_ts is not None else time.monotonic()
+        self._prune(now)
 
         is_reentry = False
         is_brand_new = True
@@ -266,6 +274,7 @@ class ReIDGallery:
         frame: np.ndarray,
         bbox: np.ndarray,
         camera_id: str,
+        now_ts: Optional[float] = None,
         is_staff: bool = False,
     ) -> None:
         """Refresh the gallery embedding with the latest frame data."""
@@ -277,7 +286,7 @@ class ReIDGallery:
         if emb is None:
             return
 
-        now = time.monotonic()
+        now = now_ts if now_ts is not None else time.monotonic()
         if vid in self._gallery:
             old = self._gallery[vid]
             # Exponential moving average for stable embedding

@@ -12,24 +12,24 @@
     "store_id": "STORE_BLR_002",
     "camera_id": "CAM_FLOOR_01",
     "camera_type": "floor",
-    "clip_start_time": "2026-04-10T14:35:00Z",
-    "notes": "Main brand shelf wall: The Face Shop, Good Vibes, Derma, Maybel. Camera elevated, looking at shelves."
+    "clip_start_time": "2026-04-10T14:30:58Z",
+    "notes": "Main brand shelf wall: The Face Shop, Good Vibes, Derma, Maybel. Camera elevated, looking at shelves. Start time aligned to the on-screen clock so cameras overlap in footage time (required for cross-camera Re-ID)."
   },
   {
     "clip_path": "Resources/CCTV Footage/CAM 2.mp4",
     "store_id": "STORE_BLR_002",
     "camera_id": "CAM_FLOOR_02",
     "camera_type": "floor",
-    "clip_start_time": "2026-04-10T14:35:00Z",
-    "notes": "Colour cosmetics section: Lakme, FacesCanada, Maybelline, Swiss Beauty."
+    "clip_start_time": "2026-04-10T14:30:34Z",
+    "notes": "Colour cosmetics section: Lakme, FacesCanada, Maybelline, Swiss Beauty. Start time aligned to the on-screen clock so cameras overlap in footage time (required for cross-camera Re-ID)."
   },
   {
     "clip_path": "Resources/CCTV Footage/CAM 5.mp4",
     "store_id": "STORE_BLR_002",
     "camera_id": "CAM_BILLING_01",
     "camera_type": "billing",
-    "clip_start_time": "2026-04-10T14:30:00Z",
-    "notes": "Billing counter: POS laptop left side, queue area centre, accessories display right."
+    "clip_start_time": "2026-04-10T14:30:19Z",
+    "notes": "Billing counter: POS laptop left side, queue area centre, accessories display right. Start time aligned to the on-screen clock so cameras overlap in footage time (required for cross-camera Re-ID)."
   },
   {
     "clip_path": "Resources/CCTV Footage/CAM 4.mp4",

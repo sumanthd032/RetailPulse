@@ -144,6 +144,10 @@ class VisitorStateManager:
         """Process one frame of tracked detections."""
         self._frame_idx = frame_idx
         frame_ts = self._frame_ts(clip_start, frame_idx, fps)
+        # Footage time (epoch seconds) for this frame. Dwell timing and Re-ID
+        # recency are measured in this store-clock time, not processing wall-clock,
+        # so durations are real and simultaneous cameras can be linked.
+        frame_epoch = clip_start.timestamp() + frame_idx / fps
         h, w = frame.shape[:2]
         self._seen_this_frame.clear()
 
@@ -186,6 +190,7 @@ class VisitorStateManager:
                     bbox=bbox,
                     camera_id=self._camera_id,
                     camera_type=self._camera_type,
+                    now_ts=frame_epoch,
                     reentry_window_s=self._cfg.reentry_window_s,
                 )
                 state = TrackState(
@@ -263,18 +268,18 @@ class VisitorStateManager:
 
             # ── Zone state transitions ─────────────────────────────────────────
             if self._camera_type != "entry":  # floor and billing cameras track zones
-                self._update_zone_state(state, current_zone, frame_ts, conf, frame_idx, fps)
+                self._update_zone_state(state, current_zone, frame_ts, conf, frame_epoch)
 
             # ── Billing queue logic (billing camera only) ─────────────────────
             if self._camera_type == "billing":
-                self._update_billing_state(state, current_zone, frame_ts, conf, frame_idx, fps)
+                self._update_billing_state(state, current_zone, frame_ts, conf, frame_epoch)
 
             # Refresh gallery embedding periodically
             if frame_idx % 15 == 0:
-                self._gallery.update_gallery(track_id, frame, bbox, self._camera_id, is_staff)
+                self._gallery.update_gallery(track_id, frame, bbox, self._camera_id, frame_epoch, is_staff)
 
         # ── Handle disappeared tracks ─────────────────────────────────────────
-        self._handle_disappeared(frame_ts, frame_idx, fps)
+        self._handle_disappeared(frame_ts, frame_epoch)
 
         # ── Check pending billing exits for POS correlation ───────────────────
         self._check_billing_abandonment(frame_ts)
@@ -285,15 +290,14 @@ class VisitorStateManager:
         current_zone: Optional[str],
         frame_ts: str,
         conf: float,
-        frame_idx: int,
-        fps: float,
+        now_ts: float,
     ) -> None:
         sku_zone = (
             self._zones.get_sku_zone(self._camera_id, current_zone)
             if current_zone
             else None
         )
-        now_wall = time.monotonic()
+        now_wall = now_ts
 
         if current_zone != state.current_zone:
             # Zone changed — emit ZONE_EXIT for old zone
@@ -341,10 +345,9 @@ class VisitorStateManager:
         current_zone: Optional[str],
         frame_ts: str,
         conf: float,
-        frame_idx: int,
-        fps: float,
+        now_ts: float,
     ) -> None:
-        now_wall = time.monotonic()
+        now_wall = now_ts
         in_billing_now = current_zone in _BILLING_ZONES
 
         if in_billing_now and not state.in_billing and not state.is_staff:
@@ -426,10 +429,10 @@ class VisitorStateManager:
         for vid in to_remove:
             self._pending_billing_exits.pop(vid, None)
 
-    def _handle_disappeared(self, frame_ts: str, frame_idx: int, fps: float) -> None:
+    def _handle_disappeared(self, frame_ts: str, now_ts: float) -> None:
         """Emit EXIT for tracks that were active last frame but not this frame."""
         disappeared = [tid for tid in self._active if tid not in self._seen_this_frame]
-        now_wall = time.monotonic()
+        now_wall = now_ts
 
         for track_id in disappeared:
             state = self._active.pop(track_id)
@@ -459,9 +462,9 @@ class VisitorStateManager:
             # Clean up billing state
             self._in_billing_now.discard(state.visitor_id)
 
-    def flush_all(self, frame_ts: str) -> None:
+    def flush_all(self, frame_ts: str, now_ts: float) -> None:
         """Called at end of clip — close all open states."""
-        now_wall = time.monotonic()
+        now_wall = now_ts
 
         for track_id, state in list(self._active.items()):
             # Close any open zone
@@ -628,7 +631,8 @@ def process_clip(
 
     # End of clip — flush all open states
     last_ts = _ts_from_frame(clip_start, frame_idx, native_fps)
-    state_manager.flush_all(last_ts)
+    last_epoch = clip_start.timestamp() + frame_idx / native_fps
+    state_manager.flush_all(last_ts, last_epoch)
     emitter.flush()
 
     cap.release()

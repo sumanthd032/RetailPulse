@@ -1,7 +1,11 @@
 tracker_type: bytetrack
-track_high_thresh: 0.60
+track_high_thresh: 0.55
 track_low_thresh: 0.10
-new_track_thresh: 0.70
-track_buffer: 45
+new_track_thresh: 0.65
+# track_buffer is in *processed* frames. At frame_skip=6 on ~30fps footage we
+# feed ~5 fps, so 90 buffered frames ≈ 18s of footage — long enough to keep a
+# person's track alive through the shelf-browsing occlusions on the floor cams
+# instead of dropping it and re-acquiring as a brand-new ID.
+track_buffer: 90
 match_thresh: 0.80
 fuse_score: true
