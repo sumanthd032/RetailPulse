@@ -18,12 +18,17 @@ class PipelineConfig:
     frame_skip: int = 3                   # process every Nth frame (5fps effective from 15fps)
 
     # ── Re-ID Gallery ────────────────────────────────────────────────────────
-    # Threshold tuned empirically on real footage. At 0.72 too many distinct
-    # visitors collapse to the same visitor_id (false REENTRYs). At 0.85 the
-    # gallery only matches visually very similar people — fewer false positives
-    # at the cost of missing some genuine re-entries when clothing changes.
-    # For retail CCTV with stable lighting and short sessions, 0.85 is conservative.
-    reid_similarity_threshold: float = 0.78
+    # Threshold tuned empirically on the real footage by sweeping and counting
+    # distinct visitor_ids against the visible headcount. The appearance model is
+    # an HSV colour histogram, so this is the only knob that matters much:
+    #   0.78 → 62 ids (heavy fragmentation; one shopper counted per camera)
+    #   0.60 → 30 ids
+    #   0.55 → 26 ids  ← chosen: stable (0.52 gives the same 26), most handoffs
+    #   0.45 → 6  ids  (cliff: unrelated people merge on similar dark clothing)
+    # 0.55 sits just above that cliff — it merges a person's own fragments and
+    # cross-camera appearances without collapsing distinct visitors together.
+    # Override per-run with the REID_THRESHOLD env var.
+    reid_similarity_threshold: float = 0.55
     reid_gallery_ttl_seconds: int = 300        # 5 minutes — gallery entry expiry
     reid_min_stable_frames: int = 8            # frames before gallery write (was 5)
     reid_camera_handoff_window_s: int = 30     # tighter window for same-frame handoff
@@ -63,4 +68,7 @@ class PipelineConfig:
         cfg.output_path       = os.getenv("OUTPUT_PATH", cfg.output_path)
         cfg.pos_csv_path      = os.getenv("POS_CSV", cfg.pos_csv_path)
         cfg.device            = os.getenv("DEVICE", cfg.device)
+        cfg.reid_similarity_threshold = float(
+            os.getenv("REID_THRESHOLD", cfg.reid_similarity_threshold)
+        )
         return cfg

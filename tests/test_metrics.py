@@ -15,7 +15,7 @@ import json
 import sqlite3
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -125,6 +125,23 @@ class TestMetrics:
         client.post("/events/ingest", json={"events": events})
         data = client.get("/stores/STORE_TEST/metrics").json()
         assert data["unique_visitors"] == 2  # staff excluded
+
+    def test_metrics_excludes_staff_confirmed_mid_session(self, client):
+        """Staff are confirmed mid-track, so a worker's first event can carry
+        is_staff=False and only later events flip true. The session must still be
+        excluded — any staff-flagged event promotes the whole session to staff."""
+        t0 = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        t1 = (datetime.now(timezone.utc) + timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        events = [
+            _make_event("VIS_cust01", "ENTRY", is_staff=False, timestamp=t0),
+            # Worker: early event not yet classified, later event confirmed staff
+            _make_event("VIS_worker", "ENTRY", is_staff=False, timestamp=t0),
+            _make_event("VIS_worker", "ZONE_ENTER", zone_id="CASH_COUNTER",
+                        is_staff=True, session_seq=2, timestamp=t1),
+        ]
+        client.post("/events/ingest", json={"events": events})
+        data = client.get("/stores/STORE_TEST/metrics").json()
+        assert data["unique_visitors"] == 1  # worker excluded despite non-staff first event
 
     def test_metrics_conversion_zero_when_no_purchases(self, client):
         events = [_make_event(f"VIS_{i:03d}", "ENTRY") for i in range(10)]

@@ -116,6 +116,16 @@ def _upsert_session(conn: sqlite3.Connection, event: StoreEvent) -> None:
         (sid, event.store_id, event.visitor_id, date, staff, ts, ts),
     )
 
+    # Staff classification is confirmed mid-track, so a visitor's first event
+    # (which created the row above) may predate that and carry is_staff=0.
+    # Promote the whole session to staff if ANY of its events is staff-flagged —
+    # otherwise staff leak into the customer count and conversion denominator.
+    if staff:
+        conn.execute(
+            "UPDATE visitor_sessions SET is_staff = 1 WHERE id = ?",
+            (sid,),
+        )
+
     et = event.event_type
 
     if et == EventType.REENTRY:
