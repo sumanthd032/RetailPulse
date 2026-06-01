@@ -19,7 +19,7 @@ CCTV Clips (1080p, ~30fps)
 │  Staff detection (HSV + trajectory) │
 │  Entry threshold crossing           │
 └──────────────┬──────────────────────┘
-               │  events_real.jsonl (398 events from 4 cameras)
+               │  events_real.jsonl (624 events from 4 cameras)
                ▼
 ┌─────────────────────────────────────┐
 │       POST /events/ingest           │
@@ -60,6 +60,10 @@ The pipeline processes each clip independently but shares a Re-ID gallery across
 **Tracking**: ByteTrack with `high_thresh=0.6, low_thresh=0.1, track_buffer=45 frames`. The two-stage matching is the key: high-confidence detections anchor the matching, then low-confidence detections (partially occluded people) get a second chance to associate with existing tracks. This was specifically chosen for the billing area footage (CAM 5) where customers overlap near the counter.
 
 **Re-ID**: When ByteTrack loses a track (person exits frame or is fully occluded), the track ID resets on reappearance. My Re-ID gallery holds appearance embeddings (combined HSV histograms of torso + upper body) with a 5-minute TTL. When a new track appears at the entry camera, gallery lookup via cosine similarity determines if it's a re-entry or a new visitor. Same logic handles cross-camera handoffs (entry camera → floor camera → billing camera).
+
+The gallery's recency window is keyed on **footage time** (each frame's `clip_start + frame/fps`), not processing wall-clock. This matters: clips are processed sequentially, so a wall-clock TTL would have expired the entry camera's gallery entries long before the floor clip was processed minutes later, and cross-camera handoff would silently never fire — every person would be recounted per camera. The clips' `clip_start_time`s are set from the cameras' on-screen clocks so they overlap in store time, which is what makes a handoff temporally possible at all.
+
+The similarity threshold was tuned by sweeping it against the visible headcount: 0.78 left identities fragmented (62 distinct on the sample footage), 0.55 settles to a stable 26 (0.52 agrees), and below ~0.45 it falls off a cliff to 6 as unrelated people merge on similar dark clothing. 0.55 sits just above that cliff. The honest limitation: a colour histogram can't always separate "same person seen twice" from "two similarly-dressed people," so 26 distinct is the floor for this model — a deep Re-ID embedding (OSNet, below) would push it lower.
 
 **Zone classification**: Shapely point-in-polygon on the bottom-centre of each bounding box (foot position, not centroid). Zone polygons were calibrated by frame inspection of each camera — the config stores fractional coordinates (0.0–1.0) so they work regardless of resolution changes.
 

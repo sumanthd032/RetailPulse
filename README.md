@@ -24,9 +24,9 @@ This single command — identical on macOS, Linux, and Windows — comes up in a
 
 ```
 retailpulse-api     | INFO  Uvicorn running on http://0.0.0.0:8000
-retailpulse-ingest  | POS reloaded: 6 transactions
-retailpulse-ingest  | INGESTED: 398 real events   REJECTED: 0   FOOTAGE DATE: 2026-04-10
-retailpulse-ingest  |   Visitors: 51   Conversion: 21.6%   Queue depth: 0
+retailpulse-ingest  | POS reloaded: 4 transactions
+retailpulse-ingest  | INGESTED: 624 real events   REJECTED: 0   FOOTAGE DATE: 2026-04-10
+retailpulse-ingest  |   Visitors: 21   Conversion: 19.1%   Queue depth: 0
 retailpulse-ingest exited with code 0
 ```
 
@@ -42,11 +42,20 @@ docker compose down             # stop everything
 ```
 
 **What you'll see** (numbers from actual CCTV detection):
-- 51 unique visitors detected by YOLOv8
-- 21.6% conversion rate (computed from POS correlation, 5-min window)
+- 21 unique customers (26 distinct people detected by YOLOv8, of which 5 are classified as staff and excluded)
+- 19.1% conversion rate (computed from POS correlation, 5-min window)
 - 8 zones with real visit data on the heatmap
 - Live event feed showing the most recent events
 - Auto-detected date: `2026-04-10` (from the footage timestamp)
+
+> **On the visitor count.** Identity is held across cameras by an HSV-colour
+> Re-ID gallery keyed on footage time, so one shopper walking entry → floor →
+> billing stays a single `visitor_id` rather than being counted once per camera.
+> The colour model has a floor: in the crowded cosmetics aisle it can't always
+> tell "same person seen twice" from "two people in similar dark clothing," so
+> 26 distinct is the honest, stable count (the Re-ID threshold was swept to just
+> above the point where unrelated people start merging). A production system
+> would swap the colour histogram for a deep Re-ID embedding to push this lower.
 
 ---
 
@@ -195,10 +204,10 @@ Camera mapping was verified by inspecting actual frames (see `data/frames/`).
 
 The footage in `Resources/CCTV Footage/` is sample CCTV — about 2.5 minutes per camera, not the full 20 minutes the problem statement describes. This affects what's visible to the pipeline:
 
-- 398 events emitted across 4 cameras (the copy committed to the repo)
-- 51 unique visitors (real, detected by YOLOv8)
-- 21 BILLING_QUEUE_JOIN events from CAM 5
-- 175 ZONE_ENTER events from floor cameras
+- 624 events emitted across 4 cameras (the copy committed to the repo)
+- 26 distinct people detected by YOLOv8 → 21 customers after staff exclusion
+- 33 BILLING_QUEUE_JOIN events from CAM 5
+- 273 ZONE_ENTER events from floor cameras
 - Only a handful of explicit ENTRY events (most visitors appear on floor cameras without an explicit entry threshold crossing — short clips don't capture every entry)
 
 (Exact counts vary slightly if you regenerate on different hardware — CPU vs GPU detection differs. These are the numbers in the shipped `data/events_real.jsonl`.)
